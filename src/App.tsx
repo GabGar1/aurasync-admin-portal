@@ -1,27 +1,46 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
+import Login from '@/pages/Login';
+import Dashboard from '@/pages/Dashboard';
+import Products from '@/pages/Products';
+import Orders from '@/pages/Orders';
+import Inventory from '@/pages/Inventory';
+import Users from '@/pages/Users';
+import NotFound from '@/pages/NotFound';
+import AppLayout from '@/components/AppLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
+const antTheme = {
+  token: {
+    colorPrimary: '#9966CC',
+    colorBgLayout: '#FAF9F6',
+    colorBgContainer: '#FFFFFF',
+    borderRadius: 8,
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  },
+};
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+  <ConfigProvider theme={antTheme}>
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/users" element={<Users />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
+  </ConfigProvider>
 );
 
 export default App;
