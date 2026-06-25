@@ -15,6 +15,13 @@ export interface LoginResponse {
   token: string;
   user: User;
 }
+export interface GetProductsResponse {
+  products: Product[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 
 export interface ProductVariant {
   id: string;
@@ -25,7 +32,7 @@ export interface ProductVariant {
 }
 
 export interface Product {
-  id: string;
+  nuvemshop_id: string;
   name: string;
   slug: string;
   category: string;

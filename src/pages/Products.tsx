@@ -1,66 +1,265 @@
-import { useState } from 'react';
-import { Table, Button, Tag, Modal, Form, Input, Select, Space, message } from 'antd';
-import { PlusOutlined, SyncOutlined } from '@ant-design/icons';
+import {useState, useMemo, useEffect} from 'react';
+import { Table, Button, Tag, Modal, Form, Input, Select, Space, message, Card, Row, Col } from 'antd';
+import { PlusOutlined, SyncOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productsApi } from '@/services/api';
 import type { Product, ProductVariant } from '@/types';
+import { useWebSocket } from "@/hooks/useWebSocket.ts";
+import CreateProductModal from "@/components/CreateProductModal.tsx";
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function Products() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
   const qc = useQueryClient();
-  const { data = [], isLoading } = useQuery({ queryKey: ['products'], queryFn: productsApi.getAll });
 
-  const createMutation = useMutation({
-    mutationFn: productsApi.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['products'] }); setModalOpen(false); form.resetFields(); message.success('Product added'); },
+  // Estados de Paginação e Filtros
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<string | undefined>(undefined);
+
+  const debouncedSearch = useDebounce(search, 500);
+
+  // Consome a função getAll com a assinatura exata do seu arquivo api.ts
+  const { data: apiResponse, isLoading } = useQuery({
+    queryKey: ['products', page, limit, debouncedSearch, category],
+    queryFn: async () => {
+      return productsApi.getAll({
+        page,
+        limit,
+        search: debouncedSearch || undefined,
+        category: category || undefined,
+      });
+    },
+    placeholderData: (previousData) => previousData,
   });
 
-  const variantColumns = [
-    { title: 'SKU', dataIndex: 'sku', key: 'sku' },
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Price', dataIndex: 'price', key: 'price', render: (v: number) => `$${v.toFixed(2)}` },
-    { title: 'Stock', dataIndex: 'stock', key: 'stock', render: (v: number) => <span style={{ color: v <= 5 ? '#ff4d4f' : undefined, fontWeight: v <= 5 ? 600 : 400 }}>{v}</span> },
-  ];
+  useWebSocket('products_updated', () => {
+    qc.invalidateQueries({ queryKey: ['products'] });
+    message.success('Estoque atualizado em tempo real!');
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: productsApi.syncNuvemshop,
+    onSuccess: (res) => {
+      message.success(`Sincronização concluída! ${res.processed || 0} produtos atualizados.`);
+      qc.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (err: any) => message.error(`Falha ao sincronizar: ${err.message}`)
+  });
+
+  // Ordenação baseada no seu tipo real: product.active
+  const sortedProducts = useMemo(() => {
+    const productsArray = apiResponse?.products;
+    if (!productsArray || !Array.isArray(productsArray)) return [];
+
+    return [...productsArray].sort((a, b) => {
+      return (b.active ? 1 : 0) - (a.active ? 1 : 0);
+    });
+  }, [apiResponse]);
+
+  // Expandir automaticamente as linhas quando houver termo de busca ativa
+  const expandedRowKeys = useMemo(() => {
+    if (!debouncedSearch) return [];
+    return sortedProducts.map(p => p.nuvemshop_id);
+  }, [debouncedSearch, sortedProducts]);
+
+  // Sub-tabela baseada estritamente nas propriedades do seu ProductVariant
+  const expandedRowRender = (product: Product) => {
+    const variantColumns = [
+      {
+        title: 'ID Variante',
+        dataIndex: 'id',
+        key: 'id',
+        width: 150,
+        render: (id: string) => <span style={{ color: '#aaa', fontSize: '11px', fontFamily: 'monospace' }}>{id}</span>
+      },
+      {
+        title: 'Nome da Variação',
+        dataIndex: 'name',
+        key: 'name',
+        render: (name: string) => <span style={{ fontWeight: 500, color: '#555' }}>{name || 'Padrão'}</span>
+      },
+      {
+        title: 'SKU',
+        dataIndex: 'sku',
+        key: 'sku',
+        render: (sku: string) => sku ? <Tag color="blue">{sku}</Tag> : '-'
+      },
+      {
+        title: 'Preço',
+        dataIndex: 'price',
+        key: 'price',
+        width: 130,
+        render: (v: number) => `R$ ${Number(v || 0).toFixed(2)}`
+      },
+      {
+        title: 'Estoque Local',
+        dataIndex: 'stock_quantity',
+        key: 'stock_quantity',
+        width: 130,
+        render: (stock: number) => {
+          const s = Number(stock || 0);
+          return (
+              <span style={{ color: s <= 10 ? '#ff4d4f' : '#27ae60', fontWeight: s <= 5 ? 600 : 400 }}>
+              {s} {s <= 10 ? '⚠️ Repor' : '✓'}
+            </span>
+          );
+        }
+      }
+    ];
+
+    return (
+        <Table
+            columns={variantColumns}
+            dataSource={product.variants || []}
+            pagination={false}
+            rowKey="id"
+            size="small"
+            bordered
+        />
+    );
+  };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Slug', dataIndex: 'slug', key: 'slug' },
-    { title: 'Category', dataIndex: 'category', key: 'category' },
-    { title: 'Status', dataIndex: 'active', key: 'active', render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Active' : 'Inactive'}</Tag> },
+    {
+      title: 'Nuvemshop ID',
+      dataIndex: 'nuvemshop_id',
+      key: 'nuvemshop_id',
+      width: 150,
+      render: (id: string) => <span style={{ color: '#999', fontSize: '11px', fontFamily: 'monospace' }}>{id || '-'}</span>
+    },
+    {
+      title: 'Nome do Produto',
+      dataIndex: 'name',
+      key: 'name',
+      render: (name: string) => <span style={{ fontWeight: 600, color: '#111' }}>{name}</span>
+    },
+    {
+      title: 'Slug',
+      dataIndex: 'slug',
+      key: 'slug',
+      render: (slug: string) => <span style={{ color: '#666', fontSize: '12px' }}>{slug}</span>
+    },
+    {
+      title: 'Categoria',
+      dataIndex: 'category',
+      key: 'category',
+      width: 150,
+      render: (cat: string) => cat ? <Tag color="purple">{cat}</Tag> : <Tag color="warning">Geral</Tag>
+    },
+    {
+      title: 'Status',
+      dataIndex: 'is_active',
+      key: 'is_active',
+      width: 110,
+      render: (active: boolean) => (
+          <Tag color={active ? 'green' : 'default'}>{active ? 'Ativo' : 'Inativo'}</Tag>
+      )
+    }
   ];
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold" style={{ color: '#333' }}>Products</h1>
-        <Space>
-          <Button icon={<SyncOutlined />} onClick={() => message.info('Sync with Nuvemshop triggered')}>Sync with Nuvemshop</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>Add Product</Button>
-        </Space>
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold">Produtos & Estoque</h1>
+            <p className="text-gray-400 text-xs">Catálogo master de produtos e variações</p>
+          </div>
+          <Space>
+            <Button
+                icon={<SyncOutlined spin={syncMutation.isPending} />}
+                onClick={() => syncMutation.mutate()}
+                loading={syncMutation.isPending}
+            >
+              Sincronizar Nuvemshop
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+              Add Product
+            </Button>
+          </Space>
+        </div>
+
+        <Card className="mb-6" size="small" title={<Space><FilterOutlined />Filtros Estatísticos</Space>}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={14}>
+              <Input
+                  placeholder="Pesquisar por nome do produto, SKU interno ou IDs..."
+                  prefix={<SearchOutlined className="text-gray-400" />}
+                  value={search}
+                  allowClear
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              />
+            </Col>
+            <Col xs={24} md={10}>
+              <Select
+                  className="w-full"
+                  placeholder="Filtrar por Categoria"
+                  allowClear
+                  value={category}
+                  onChange={(value) => { setCategory(value); setPage(1); }}
+                  options={[
+                    { value: 'Brincos ', label: 'Brincos' },
+                    { value: 'Anéis', label: 'Anéis' },
+                    { value: 'Braceletes ', label: 'Braceletes' },
+                    { value: 'Chokers', label: 'Chokers' },
+                    { value: 'Conjuntos', label: 'Conjuntos' },
+                    { value: 'Pingentes', label: 'Pingentes' },
+                    { value: 'Chaveiros', label: 'Chaveiros' },
+                    { value: 'Decoração', label: 'Decoração' },
+                    { value: 'Pulseiras ', label: 'Pulseiras' },
+                    { value: 'Geral', label: 'Geral' },
+                  ]}
+              />
+            </Col>
+          </Row>
+        </Card>
+
+        <Table
+            rowKey="nuvemshop_id" // Alterado para mapear a chave única real do seu tipo Product
+            loading={isLoading}
+            dataSource={sortedProducts}
+            columns={columns}
+            bordered
+            size="middle"
+            expandable={{
+              expandedRowRender,
+              rowExpandable: (record) => record.variants && record.variants.length > 0,
+              expandedRowKeys: expandedRowKeys.length > 0 ? expandedRowKeys : undefined,
+            }}
+            pagination={{
+              current: page,
+              pageSize: limit,
+              total: apiResponse?.total || 0,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50'],
+              onChange: (p, s) => {
+                setPage(p);
+                setLimit(s);
+              }
+            }}
+        />
+
+        <CreateProductModal
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+        />
       </div>
-      <Table
-        rowKey="id"
-        loading={isLoading}
-        dataSource={data}
-        columns={columns}
-        expandable={{
-          expandedRowRender: (record: Product) => (
-            <Table rowKey="id" dataSource={record.variants} columns={variantColumns} pagination={false} size="small" />
-          ),
-        }}
-        bordered
-        size="middle"
-      />
-      <Modal title="Add Product" open={modalOpen} onCancel={() => setModalOpen(false)} onOk={() => form.submit()} confirmLoading={createMutation.isPending}>
-        <Form form={form} layout="vertical" onFinish={(v) => createMutation.mutate(v)}>
-          <Form.Item name="name" label="Product Name" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="category" label="Category" rules={[{ required: true }]}>
-            <Select options={[{ value: 'Audio' }, { value: 'Wearables' }, { value: 'Accessories' }, { value: 'Peripherals' }]} />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
   );
 }

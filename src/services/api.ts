@@ -3,35 +3,24 @@ import type {
   LoginPayload, LoginResponse, Product, Order,
   InventoryTransaction, DashboardStats, User
 } from '@/types';
+import {GetProductsResponse} from "@/types";
+
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3333/api';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3333/api', // swap to real backend URL
+  baseURL: 'http://localhost:3333/api',
 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('aurasync_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  console.log("token: ", token)
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
   return config;
 });
 
 // ─── Mock Data ───────────────────────────────────────────────
-
-const mockProducts: Product[] = [
-  { id: '1', name: 'Aurora Wireless Headphones', slug: 'aurora-headphones', category: 'Audio', active: true, variants: [
-    { id: 'v1', sku: 'AWH-BLK-01', name: 'Black', price: 129.99, stock: 42 },
-    { id: 'v2', sku: 'AWH-WHT-01', name: 'White', price: 129.99, stock: 18 },
-  ]},
-  { id: '2', name: 'Nebula Smart Watch', slug: 'nebula-watch', category: 'Wearables', active: true, variants: [
-    { id: 'v3', sku: 'NSW-SIL-01', name: 'Silver 40mm', price: 299.99, stock: 5 },
-  ]},
-  { id: '3', name: 'Prism USB-C Hub', slug: 'prism-hub', category: 'Accessories', active: false, variants: [
-    { id: 'v4', sku: 'PUH-GRY-01', name: 'Space Gray', price: 59.99, stock: 120 },
-  ]},
-  { id: '4', name: 'Zenith Mechanical Keyboard', slug: 'zenith-keyboard', category: 'Peripherals', active: true, variants: [
-    { id: 'v5', sku: 'ZMK-BLK-01', name: 'Linear Black', price: 179.99, stock: 31 },
-    { id: 'v6', sku: 'ZMK-WHT-01', name: 'Tactile White', price: 179.99, stock: 0 },
-  ]},
-];
 
 const mockOrders: Order[] = [
   { id: 'ORD-001', customerName: 'Alice Johnson', totalAmount: 259.98, date: '2025-04-07', status: 'PAID', items: [] },
@@ -61,12 +50,9 @@ const delay = (ms = 400) => new Promise(r => setTimeout(r, ms));
 
 export const authApi = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
-    await delay(600);
-    // Accept any credentials for mock
-    return {
-      token: 'mock-jwt-token-aurasync-2025',
-      user: mockUsers[0],
-    };
+    const response = await api.post<LoginResponse>('/login', payload);
+
+    return response.data;
   },
 };
 
@@ -78,10 +64,19 @@ export const dashboardApi = {
 };
 
 export const productsApi = {
-  getAll: async (): Promise<Product[]> => { await delay(); return mockProducts; },
+  getAll: async (params?: { page?: number; limit?: number; search?: string; category?: string }) => {
+    const response = await api.get('/products', { params });
+    return response.data;
+  },
+
+  syncNuvemshop: async (): Promise<{ success: boolean; processed: number }> => {
+    const response = await api.post('/products/sync/nuvemshop');
+    return response.data;
+  },
+
   create: async (product: Partial<Product>): Promise<Product> => {
-    await delay();
-    return { id: String(Date.now()), name: product.name || '', slug: '', category: product.category || '', active: true, variants: [] };
+    const response = await api.post<Product>('/products', product);
+    return response.data.products;
   },
 };
 
