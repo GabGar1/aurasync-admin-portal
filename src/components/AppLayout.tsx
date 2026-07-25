@@ -72,7 +72,7 @@ export default function AppLayout() {
           >
             <div className="flex items-center gap-2 cursor-pointer">
               <Avatar size="small" icon={<UserOutlined />} style={{ backgroundColor: '#9966CC' }} />
-              <Text className="hidden sm:inline">{user?.name || 'Admin'}</Text>
+              <Text className="hidden sm:inline">{user ? `${user.first_name} ${user.last_name}` : 'Admin'}</Text>
             </div>
           </Dropdown>
         </Header>
