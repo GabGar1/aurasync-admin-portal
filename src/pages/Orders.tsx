@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Button, Tag, Modal, Form, Input, InputNumber, Select, Space, message, Card, Row, Col } from 'antd';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +20,15 @@ const statusColors: Record<string, string> = {
   CANCELED: 'red',
 };
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 export default function Orders() {
   const { getUser } = useAuth();
   const currentUser = getUser();
@@ -27,18 +36,19 @@ export default function Orders() {
   const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 500);
   const qc = useQueryClient();
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createForm] = Form.useForm();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['orders', page, limit, statusFilter, search],
+    queryKey: ['orders', page, limit, statusFilter, debouncedSearch],
     queryFn: () => ordersApi.getAll({
       page,
       limit,
       status: statusFilter || undefined,
-      search: search || undefined,
+      search: debouncedSearch || undefined,
     }),
     placeholderData: (previousData) => previousData,
   });

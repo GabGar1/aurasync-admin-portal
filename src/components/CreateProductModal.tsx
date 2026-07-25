@@ -8,7 +8,7 @@ interface CreateProductModalProps {
 }
 
 const categoryOptions = [
-    { value: 'Brincos', label: 'Brincos' }, { value: 'Aneis', label: 'Anéis' },
+    { value: 'Brincos', label: 'Brincos' }, { value: 'Anéis', label: 'Anéis' },
     { value: 'Braceletes', label: 'Braceletes' }, { value: 'Chokers', label: 'Chokers' },
     { value: 'Conjuntos', label: 'Conjuntos' }, { value: 'Pingentes', label: 'Pingentes' },
     { value: 'Chaveiros', label: 'Chaveiros' }, { value: 'Decoração', label: 'Decoração' },

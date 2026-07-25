@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Button, Tag, Modal, Form, Input, InputNumber, Select, Space, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,6 +26,7 @@ export default function Inventory() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
+  const watchType = Form.useWatch('type', form);
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateInventoryPayload) => inventoryApi.create(payload),
@@ -125,7 +126,21 @@ export default function Inventory() {
               { value: 'ADJUSTMENT', label: 'ADJUSTMENT (Ajuste manual)' },
             ]} />
           </Form.Item>
-          <Form.Item name="quantity_changed" label="Quantidade" rules={[{ required: true }]}>
+          <Form.Item name="quantity_changed" label="Quantidade" rules={[
+            { required: true, message: 'Obrigatório' },
+            {
+              validator: (_, value) => {
+                if (value === undefined || value === null) return Promise.resolve();
+                if (watchType === 'SALE' && value >= 0) {
+                  return Promise.reject(new Error('SALE deve ter quantidade negativa'));
+                }
+                if (watchType === 'RESTOCK' && value <= 0) {
+                  return Promise.reject(new Error('RESTOCK deve ter quantidade positiva'));
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}>
             <InputNumber
               style={{ width: '100%' }}
               placeholder="Use valor negativo para SALE, positivo para RESTOCK"

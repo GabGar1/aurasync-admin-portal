@@ -254,15 +254,15 @@ export default function Products() {
                   value={category}
                   onChange={(value) => { setCategory(value); setPage(1); }}
                   options={[
-                    { value: 'Brincos ', label: 'Brincos' },
+                    { value: 'Brincos', label: 'Brincos' },
                     { value: 'Anéis', label: 'Anéis' },
-                    { value: 'Braceletes ', label: 'Braceletes' },
+                    { value: 'Braceletes', label: 'Braceletes' },
                     { value: 'Chokers', label: 'Chokers' },
                     { value: 'Conjuntos', label: 'Conjuntos' },
                     { value: 'Pingentes', label: 'Pingentes' },
                     { value: 'Chaveiros', label: 'Chaveiros' },
                     { value: 'Decoração', label: 'Decoração' },
-                    { value: 'Pulseiras ', label: 'Pulseiras' },
+                    { value: 'Pulseiras', label: 'Pulseiras' },
                     { value: 'Geral', label: 'Geral' },
                   ]}
               />
