@@ -8,7 +8,7 @@ import Orders from '@/pages/Orders';
 import Inventory from '@/pages/Inventory';
 import Users from '@/pages/Users';
 import NotFound from '@/pages/NotFound';
-import AppLayout from '@/components/AppLayout';
+import Layout from '@/pages/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 const queryClient = new QueryClient();
@@ -29,7 +29,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/products" element={<Products />} />
             <Route path="/orders" element={<Orders />} />
