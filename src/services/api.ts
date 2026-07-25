@@ -20,6 +20,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && !error.config?.url?.includes('/login')) {
+      localStorage.removeItem('aurasync_token');
+      localStorage.removeItem('aurasync_user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authApi = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
     const response = await api.post<LoginResponse>('/login', payload);
