@@ -5,6 +5,8 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '@/services/api';
 import type { User, CreateUserPayload, UpdateUserPayload } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { isAdmin } from '@/lib/utils';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -16,6 +18,8 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function Users() {
+  const { getUser } = useAuth();
+  const currentUser = getUser();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
@@ -110,36 +114,40 @@ export default function Users() {
       width: 160,
       render: (_: any, record: User) => (
         <Space>
-          <Button
-            size="small"
-            onClick={() => {
-              setEditingUser(record);
-              editForm.setFieldsValue({
-                first_name: record.first_name,
-                last_name: record.last_name,
-                status: record.status,
-              });
-              setEditModalOpen(true);
-            }}
-          >
-            Editar
-          </Button>
-          <Button
-            danger
-            size="small"
-            onClick={() => {
-              Modal.confirm({
-                title: 'Remover usuário?',
-                content: `Tem certeza que deseja remover ${record.first_name} ${record.last_name}?`,
-                okText: 'Remover',
-                okType: 'danger',
-                cancelText: 'Cancelar',
-                onOk: () => deleteMutation.mutate(record.id),
-              });
-            }}
-          >
-            Remover
-          </Button>
+          {isAdmin(currentUser?.role) && (
+            <Button
+              size="small"
+              onClick={() => {
+                setEditingUser(record);
+                editForm.setFieldsValue({
+                  first_name: record.first_name,
+                  last_name: record.last_name,
+                  status: record.status,
+                });
+                setEditModalOpen(true);
+              }}
+            >
+              Editar
+            </Button>
+          )}
+          {isAdmin(currentUser?.role) && (
+            <Button
+              danger
+              size="small"
+              onClick={() => {
+                Modal.confirm({
+                  title: 'Remover usuário?',
+                  content: `Tem certeza que deseja remover ${record.first_name} ${record.last_name}?`,
+                  okText: 'Remover',
+                  okType: 'danger',
+                  cancelText: 'Cancelar',
+                  onOk: () => deleteMutation.mutate(record.id),
+                });
+              }}
+            >
+              Remover
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -152,9 +160,11 @@ export default function Users() {
           <h1 className="text-2xl font-semibold">Usuários</h1>
           <p className="text-gray-400 text-xs">Gerenciamento de usuários do sistema</p>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
-          Novo Usuário
-        </Button>
+        {isAdmin(currentUser?.role) && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
+            Novo Usuário
+          </Button>
+        )}
       </div>
 
       <Card className="mb-6" size="small">

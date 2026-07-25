@@ -5,6 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '@/services/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import type { Order, CreateOrderPayload } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { isAdmin } from '@/lib/utils';
 
 type ApiError = {
   response?: { data?: { error?: string } };
@@ -19,6 +21,8 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Orders() {
+  const { getUser } = useAuth();
+  const currentUser = getUser();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
@@ -108,7 +112,7 @@ export default function Orders() {
       width: 200,
       render: (_: unknown, record: Order) => (
         <Space>
-          {record.status !== 'CANCELED' && (
+          {isAdmin(currentUser?.role) && record.status !== 'CANCELED' ? (
             <Select
               size="small"
               value={record.status}
@@ -121,23 +125,25 @@ export default function Orders() {
                 { value: 'CANCELED', label: 'CANCELED' },
               ]}
             />
-          )}
-          <Button
-            danger
-            size="small"
-            onClick={() => {
-              Modal.confirm({
-                title: 'Cancelar pedido?',
-                content: `Tem certeza que deseja cancelar o pedido ${record.id}?`,
-                okText: 'Cancelar Pedido',
-                okType: 'danger',
-                cancelText: 'Voltar',
-                onOk: () => deleteMutation.mutate(record.id),
-              });
-            }}
-          >
-            Cancelar
-          </Button>
+          ) : null}
+          {isAdmin(currentUser?.role) ? (
+            <Button
+              danger
+              size="small"
+              onClick={() => {
+                Modal.confirm({
+                  title: 'Cancelar pedido?',
+                  content: `Tem certeza que deseja cancelar o pedido ${record.id}?`,
+                  okText: 'Cancelar Pedido',
+                  okType: 'danger',
+                  cancelText: 'Voltar',
+                  onOk: () => deleteMutation.mutate(record.id),
+                });
+              }}
+            >
+              Cancelar
+            </Button>
+          ) : null}
         </Space>
       ),
     },
@@ -150,9 +156,11 @@ export default function Orders() {
           <h1 className="text-2xl font-semibold">Pedidos</h1>
           <p className="text-gray-400 text-xs">Gerenciamento de pedidos</p>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
-          Novo Pedido
-        </Button>
+        {isAdmin(currentUser?.role) && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
+            Novo Pedido
+          </Button>
+        )}
       </div>
 
       <Card className="mb-6" size="small">

@@ -4,12 +4,16 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '@/services/api';
 import type { InventoryTransaction, CreateInventoryPayload } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { isAdmin } from '@/lib/utils';
 
 const typeColors: Record<string, string> = {
   SALE: 'orange', RESTOCK: 'blue', ADJUSTMENT: 'purple',
 };
 
 export default function Inventory() {
+  const { getUser } = useAuth();
+  const currentUser = getUser();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
   const qc = useQueryClient();
@@ -69,9 +73,11 @@ export default function Inventory() {
           <h1 className="text-2xl font-semibold">Inventário</h1>
           <p className="text-gray-400 text-xs">Histórico de transações de inventário</p>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-          Ajuste Manual
-        </Button>
+        {isAdmin(currentUser?.role) && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+            Ajuste Manual
+          </Button>
+        )}
       </div>
 
       <Table

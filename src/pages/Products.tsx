@@ -6,6 +6,13 @@ import { productsApi } from '@/services/api';
 import type { Product, ProductVariant } from '@/types';
 import { useWebSocket } from "@/hooks/useWebSocket.ts";
 import CreateProductModal from "@/components/CreateProductModal.tsx";
+import { useAuth } from '@/hooks/useAuth';
+import { isAdmin } from '@/lib/utils';
+
+type ApiError = {
+  response?: { data?: { error?: string } };
+  message?: string;
+};
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -24,6 +31,8 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function Products() {
+  const { getUser } = useAuth();
+  const currentUser = getUser();
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
   const qc = useQueryClient();
@@ -70,7 +79,7 @@ export default function Products() {
       message.success('Produto excluído com sucesso');
       qc.invalidateQueries({ queryKey: ['products'] });
     },
-    onError: (err: any) => message.error(`Falha ao excluir: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`),
+    onError: (err: ApiError) => message.error(`Falha ao excluir: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`),
   });
 
   // Ordenação baseada no seu tipo real: product.is_active
@@ -180,23 +189,25 @@ export default function Products() {
       key: 'actions',
       width: 100,
       render: (_: unknown, record: Product) => (
-        <Button
-          danger
-          size="small"
-          loading={deleteMutation.isPending}
-          onClick={() => {
-            Modal.confirm({
-              title: 'Excluir produto?',
-              content: `Tem certeza que deseja excluir "${record.name}"?`,
-              okText: 'Excluir',
-              okType: 'danger',
-              cancelText: 'Cancelar',
-              onOk: () => deleteMutation.mutate(record.id),
-            });
-          }}
-        >
-          Excluir
-        </Button>
+        isAdmin(currentUser?.role) ? (
+          <Button
+            danger
+            size="small"
+            loading={deleteMutation.isPending}
+            onClick={() => {
+              Modal.confirm({
+                title: 'Excluir produto?',
+                content: `Tem certeza que deseja excluir "${record.name}"?`,
+                okText: 'Excluir',
+                okType: 'danger',
+                cancelText: 'Cancelar',
+                onOk: () => deleteMutation.mutate(record.id),
+              });
+            }}
+          >
+            Excluir
+          </Button>
+        ) : null
       ),
     }
   ];
@@ -216,9 +227,11 @@ export default function Products() {
             >
               Sincronizar Nuvemshop
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-              Add Product
-            </Button>
+            {isAdmin(currentUser?.role) && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+                Add Product
+              </Button>
+            )}
           </Space>
         </div>
 
