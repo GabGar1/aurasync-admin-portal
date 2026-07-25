@@ -106,6 +106,11 @@ export const ordersApi = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/orders/${id}`);
   },
+
+  syncNuvemshop: async (): Promise<{ success: boolean; processed: number }> => {
+    const response = await api.post('/orders/sync/nuvemshop');
+    return response.data;
+  },
 };
 
 export const inventoryApi = {

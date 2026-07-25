@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Tag, Modal, Form, Input, InputNumber, Select, Space, message, Card, Row, Col } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined, SyncOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '@/services/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -94,6 +94,17 @@ export default function Orders() {
     ),
   });
 
+  const syncMutation = useMutation({
+    mutationFn: ordersApi.syncNuvemshop,
+    onSuccess: (res) => {
+      message.success(`Sincronização concluída! ${res.processed || 0} pedidos atualizados.`);
+      qc.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (err: ApiError) => message.error(
+      `Falha ao sincronizar: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`
+    ),
+  });
+
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 100 },
     { title: 'Cliente', dataIndex: 'customer_name', key: 'customer_name' },
@@ -166,6 +177,13 @@ export default function Orders() {
           <h1 className="text-2xl font-semibold">Pedidos</h1>
           <p className="text-gray-400 text-xs">Gerenciamento de pedidos</p>
         </div>
+        <Button
+          icon={<SyncOutlined spin={syncMutation.isPending} />}
+          onClick={() => syncMutation.mutate()}
+          loading={syncMutation.isPending}
+        >
+          Sincronizar Nuvemshop
+        </Button>
         {isAdmin(currentUser?.role) && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
             Novo Pedido
