@@ -23,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, LogOut, User } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -87,6 +88,7 @@ export default function Layout() {
         <main className="p-8">
           <Outlet />
         </main>
+        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );
