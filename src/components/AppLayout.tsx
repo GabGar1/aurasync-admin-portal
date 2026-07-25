@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, Typography } from 'antd';
+import {Layout, Menu, Button, Avatar, Dropdown, Typography, Image} from 'antd';
 import {
   DashboardOutlined,
   ShoppingOutlined,
@@ -19,10 +19,10 @@ const { Text } = Typography;
 
 const menuItems = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/products', icon: <ShoppingOutlined />, label: 'Products' },
-  { key: '/orders', icon: <FileTextOutlined />, label: 'Orders' },
-  { key: '/inventory', icon: <DatabaseOutlined />, label: 'Inventory' },
-  { key: '/users', icon: <TeamOutlined />, label: 'Users' },
+  { key: '/products', icon: <ShoppingOutlined />, label: 'Produtos' },
+  { key: '/orders', icon: <FileTextOutlined />, label: 'Pedidos' },
+  { key: '/inventory', icon: <DatabaseOutlined />, label: 'Inventário' },
+  { key: '/users', icon: <TeamOutlined />, label: 'Usuários' },
 ];
 
 export default function AppLayout() {
@@ -42,9 +42,10 @@ export default function AppLayout() {
         style={{ background: '#fff', borderRight: '1px solid hsl(240 6% 90%)' }}
       >
         <div className="flex items-center justify-center h-16 border-b border-border">
-          <Text strong className="text-lg" style={{ color: '#9966CC' }}>
-            {collapsed ? 'AS' : 'AuraSync'}
-          </Text>
+          <Image src="./logo_nome.png"
+              alt="Logo"
+              preview={false}
+          />
         </div>
         <Menu
           mode="inline"

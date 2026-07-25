@@ -1,208 +1,229 @@
-import { useState } from 'react';
-import { Card, Table, Tag, Row, Col, Progress, Typography, Space, Alert, Badge } from 'antd';
-import { WarningOutlined, ArrowUpOutlined, ArrowDownOutlined, InboxOutlined } from '@ant-design/icons';
+import { useState, useMemo } from 'react';
+import { Card, Row, Col, Statistic, Table, Tag, Typography, Select, Input, Space, DatePicker } from 'antd';
+import { DollarSign, TrendingDown, AlertCircle, Search } from 'lucide-react';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
 
-const { Text, Title } = Typography;
+dayjs.extend(isBetween);
 
-// ─── DADOS MOCKADOS (Ajustados para seu nicho real de Semijoias) ─────────────────
-const mockLowStock = [
-    { id: 'v-101', name: 'Anel Regulável Falange', sku: 'AN-REG-01', category: 'Aneis', stock: 2, status: 'CRÍTICO' },
-    { id: 'v-102', name: 'Brinco Argola Cravejada M', sku: 'BR-ARG-02', category: 'Brincos', stock: 5, status: 'REPOR' },
-    { id: 'v-103', name: 'Choker Fita Lisa', sku: 'CK-FIT-01', category: 'Chokers', stock: 1, status: 'CRÍTICO' },
-    { id: 'v-104', name: 'Pulseira Elos Portugueses', sku: 'PL-ELO-05', category: 'Pulseiras', stock: 4, status: 'REPOR' },
+const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+
+interface ProductVariant {
+    id: string;
+    sku: string;
+    name: string;
+    price: number;
+    stock: number;
+}
+
+interface Product {
+    nuvemshop_id: string;
+    name: string;
+    slug: string;
+    category: string;
+    active: boolean;
+    lastUpdate: string;
+    variants: ProductVariant[];
+}
+
+const mockProducts: Product[] = [
+    { nuvemshop_id: '1', name: 'Brinco Argola Cravejada', slug: 'brinco-argola', category: 'Brincos', active: true, lastUpdate: '2026-06-20', variants: [{ id: 'v1', sku: 'BR-01', name: 'Dourado', price: 45, stock: 50 }] },
+    { nuvemshop_id: '2', name: 'Anel Solitário Ouro', slug: 'anel-solitario', category: 'Aneis', active: true, lastUpdate: '2026-06-15', variants: [{ id: 'v2', sku: 'AN-01', name: '18', price: 120, stock: 0 }] },
+    { nuvemshop_id: '3', name: 'Choker Fita Lisa', slug: 'choker-fita', category: 'Chokers', active: true, lastUpdate: '2026-05-10', variants: [{ id: 'v3', sku: 'CH-01', name: 'Prata', price: 80, stock: 3 }] },
+    { nuvemshop_id: '4', name: 'Pulseira Elos', slug: 'pulseira-elos', category: 'Pulseiras', active: true, lastUpdate: '2026-06-01', variants: [{ id: 'v4', sku: 'PU-01', name: 'Única', price: 65, stock: 30 }] },
 ];
 
-const mockTopSelling = [
-    { key: '1', name: 'Brinco Ponto de Luz Zircônia', sku: 'BR-PTL-01', category: 'Brincos', soldQty: 142, revenue: 3976.00, stock: 45 },
-    { key: '2', name: 'Colar Gravatinha Coração', sku: 'CL-GRA-02', category: 'Chokers', soldQty: 98, revenue: 5782.00, stock: 22 },
-    { key: '3', name: 'Anel Solitário Clássico', sku: 'AN-SOL-01', category: 'Aneis', soldQty: 85, revenue: 7565.00, stock: 19 },
-    { key: '4', name: 'Bracelete Liso Rígido', sku: 'BC-LIS-01', category: 'Braceletes', soldQty: 64, revenue: 5696.00, stock: 12 },
+const categoryData = [
+    { name: 'Brincos', value: 35 },
+    { name: 'Aneis', value: 25 },
+    { name: 'Chokers', value: 20 },
+    { name: 'Pulseiras', value: 20 },
 ];
 
-const mockLowSelling = [
-    { key: '1', name: 'Chaveiro Olho Grego Patuá', sku: 'CH-OLH-09', category: 'Chaveiros', soldQty: 2, daysInStock: 120, stock: 40 },
-    { key: '2', name: 'Pingente Letra Inicial Custom', sku: 'PG-LET-01', category: 'Pingentes', soldQty: 5, daysInStock: 95, stock: 55 },
-    { key: '3', name: 'Conjunto Gota Esmeralda Fusion', sku: 'CJ-GOT-04', category: 'Conjuntos', soldQty: 7, daysInStock: 80, stock: 15 },
+const topMarginData = [
+    { name: 'Anel Solitário', margin: 85 },
+    { name: 'Choker Fita', margin: 78 },
+    { name: 'Brinco Argola', margin: 72 },
+    { name: 'Pulseira Elos', margin: 65 }
 ];
 
-export default function StockControl() {
-    // Colunas para Alerta de Reposição
-    const lowStockColumns = [
-        {
-            title: 'Item / Variação',
-            dataIndex: 'name',
-            key: 'name',
-            render: (text: string, record: any) => (
-                <Space direction="vertical" size={0}>
-                    <Text strong>{text}</Text>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>{record.category} • SKU: {record.sku}</Text>
-                </Space>
-            ),
-        },
-        {
-            title: 'Estoque Atual',
-            dataIndex: 'stock',
-            key: 'stock',
-            width: 120,
-            render: (stock: number) => <Text strong type="danger">{stock} un.</Text>,
-        },
-        {
-            title: 'Nível de Urgência',
-            dataIndex: 'status',
-            key: 'status',
-            width: 130,
-            render: (status: string) => (
-                <Tag color={status === 'CRÍTICO' ? 'red' : 'orange'} style={{ fontWeight: 600 }}>
-                    {status}
-                </Tag>
-            ),
-        },
-    ];
+const actionableInsights = [
+    { id: '1', type: 'RUPTURA', product: 'Anel Solitário Ouro (18)', action: 'Repor item esgotado', impact: 'Perda de R$ 120/venda' },
+    { id: '2', type: 'ESTOQUE BAIXO', product: 'Choker Fita Lisa (Prata)', action: 'Comprar 20 unidades', impact: 'Risco de perda de giro' },
+    { id: '3', type: 'ENCALHE', product: 'Pulseira Elos (Única)', action: 'Promoção 20% OFF', impact: 'Libera R$ 1.950,00' },
+];
 
-    // Colunas para os Mais Vendidos
-    const topSellingColumns = [
-        {
-            title: 'Produto',
-            dataIndex: 'name',
-            key: 'name',
-            render: (text: string, record: any) => (
-                <Space direction="vertical" size={0}>
-                    <Text strong>{text}</Text>
-                    <Tag color="purple" style={{ fontSize: '10px', lineHeight: '14px' }}>{record.category}</Tag>
-                </Space>
-            ),
-        },
-        {
-            title: 'Qtd Vendida',
-            dataIndex: 'soldQty',
-            key: 'soldQty',
-            width: 120,
-            render: (qty: number) => (
-                <Space style={{ color: '#52c41a', fontWeight: 600 }}>
-                    <ArrowUpOutlined /> {qty}
-                </Space>
-            ),
-        },
-        {
-            title: 'Faturamento',
-            dataIndex: 'revenue',
-            key: 'revenue',
-            width: 130,
-            render: (val: number) => `R$ ${val.toFixed(2)}`,
-        },
-    ];
+const COLORS = ['#9966CC', '#52c41a', '#faad14', '#1890ff'];
 
-    // Colunas para os Menos Vendidos (Encalhados)
-    const lowSellingColumns = [
+export default function InventoryIntelligence() {
+    const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null);
+
+    const metrics = useMemo(() => {
+        let totalValue = 0;
+        let lowStockCount = 0;
+        let outOfStockCount = 0;
+
+        mockProducts.forEach(product => {
+            if (categoryFilter && product.category !== categoryFilter) return;
+            if (searchTerm && !product.name.toLowerCase().includes(searchTerm.toLowerCase())) return;
+
+            if (dateRange && dateRange[0] && dateRange[1]) {
+                const productDate = dayjs(product.lastUpdate);
+                if (!productDate.isBetween(dateRange[0], dateRange[1], 'day', '[]')) return;
+            }
+
+            product.variants.forEach(variant => {
+                if (variant.stock > 0) {
+                    totalValue += variant.price * variant.stock;
+                }
+
+                if (variant.stock === 0) {
+                    outOfStockCount++;
+                } else if (variant.stock <= 5) {
+                    lowStockCount++;
+                }
+            });
+        });
+
+        return { totalValue, lowStockCount, outOfStockCount };
+    }, [categoryFilter, searchTerm, dateRange]);
+
+    const insightsColumns = [
         {
-            title: 'Produto Sem Giro',
-            dataIndex: 'name',
-            key: 'name',
-            render: (text: string, record: any) => (
-                <Space direction="vertical" size={0}>
-                    <Text strong>{text}</Text>
-                    <Text type="secondary" style={{ fontSize: '11px' }}>SKU: {record.sku}</Text>
-                </Space>
-            ),
+            title: 'Diagnóstico',
+            dataIndex: 'type',
+            render: (type: string) => {
+                let color = 'warning';
+                if (type === 'RUPTURA') color = 'red';
+                if (type === 'ENCALHE') color = 'blue';
+                return <Tag color={color}>{type}</Tag>;
+            }
         },
-        {
-            title: 'Vendas (Período)',
-            dataIndex: 'soldQty',
-            key: 'soldQty',
-            width: 140,
-            render: (qty: number) => (
-                <Space style={{ color: '#faad14', fontWeight: 500 }}>
-                    <ArrowDownOutlined /> {qty} un.
-                </Space>
-            ),
-        },
-        {
-            title: 'Dias Parado',
-            dataIndex: 'daysInStock',
-            key: 'daysInStock',
-            width: 120,
-            render: (days: number) => <Text type="danger">{days} dias</Text>,
-        },
+        { title: 'Produto', dataIndex: 'product', className: 'font-medium' },
+        { title: 'Ação Sugerida', dataIndex: 'action', render: (text: string) => <a className="text-blue-600 cursor-pointer">{text}</a> },
+        { title: 'Impacto Projetado', dataIndex: 'impact', className: 'text-gray-500' },
     ];
 
     return (
-        <div className="p-2">
-            <div className="mb-6">
-                <Title level={2} style={{ margin: 0, color: '#333' }}>Controle de Estoque Analítico</Title>
-                <Text type="secondary">Gestão de saúde do inventário, curva ABC e necessidade de compras</Text>
+        <div className="p-6 max-w-7xl mx-auto">
+
+            <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 mb-8">
+                <div>
+                    <Title level={2} className="!m-0 text-gray-900">Inteligência de Estoque</Title>
+                    <Text type="secondary">Análise de valor, risco de ruptura e insights estratégicos.</Text>
+                </div>
+
+                <Space className="w-full xl:w-auto" direction="horizontal" size="middle" wrap>
+                    <Input
+                        prefix={<Search size={16} className="text-gray-400" />}
+                        placeholder="Buscar produto..."
+                        allowClear
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ width: 220 }}
+                    />
+                    <Select
+                        placeholder="Todas as Categorias"
+                        allowClear
+                        onChange={setCategoryFilter}
+                        style={{ width: 160 }}
+                        options={[
+                            { value: 'Brincos', label: 'Brincos' },
+                            { value: 'Aneis', label: 'Anéis' },
+                            { value: 'Chokers', label: 'Chokers' },
+                            { value: 'Pulseiras', label: 'Pulseiras' },
+                            { value: 'Conjuntos', label: 'Conjuntos' },
+                        ]}
+                    />
+                    <RangePicker
+                        onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs])}
+                        format="DD/MM/YYYY"
+                        style={{ width: 260 }}
+                        placeholder={['Data Inicial', 'Data Final']}
+                    />
+                </Space>
             </div>
 
-            {/* ─── SEÇÃO 1: ALERTAS DE REPOSIÇÃO (Mecanismo Crítico) ─────────────────── */}
-            <Card
-                title={
-                    <Space>
-                        <WarningOutlined style={{ color: '#ff4d4f' }} />
-                        <span>Alerta de Reposição Imediata</span>
-                        <Badge count={mockLowStock.length} style={{ backgroundColor: '#ff4d4f' }} />
-                    </Space>
-                }
-                className="shadow-sm mb-6"
-                bordered={false}
-            >
-                <Alert
-                    message="Atenção: Itens abaixo estão operando abaixo do estoque mínimo de segurança determinado para Semijoias."
-                    type="error"
-                    showIcon
-                    className="mb-4"
-                />
-                <Table
-                    dataSource={mockLowStock}
-                    columns={lowStockColumns}
-                    rowKey="id"
-                    pagination={false}
-                    size="middle"
-                />
-            </Card>
-
-            {/* ─── SEÇÃO 2: MAIS VENDIDOS VS MENOS VENDIDOS (Desempenho Comercial) ──── */}
-            <Row gutter={[20, 20]}>
-                {/* Card da Esquerda: Mais Vendidos */}
-                <Col xs={24} lg={12}>
-                    <Card
-                        title={
-                            <Space>
-                                <ArrowUpOutlined style={{ color: '#52c41a' }} />
-                                <span>Produtos Mais Vendidos (Top Giro)</span>
-                            </Space>
-                        }
-                        className="shadow-sm"
-                        bordered={false}
-                    >
-                        <Table
-                            dataSource={mockTopSelling}
-                            columns={topSellingColumns}
-                            pagination={false}
-                            size="middle"
+            <Row gutter={[16, 16]} className="mb-6">
+                <Col xs={24} sm={12} lg={8}>
+                    <Card bordered={false} className="shadow-sm">
+                        <Statistic
+                            title="Valor do Estoque (Disponível)"
+                            value={metrics.totalValue}
+                            precision={2}
+                            prefix={<DollarSign size={20} className="mr-1" />}
+                            valueStyle={{ color: '#52c41a' }}
                         />
                     </Card>
                 </Col>
-
-                {/* Card da Direita: Menos Vendidos / Encalhados */}
-                <Col xs={24} lg={12}>
-                    <Card
-                        title={
-                            <Space>
-                                <InboxOutlined style={{ color: '#faad14' }} />
-                                <span>Produtos Menos Vendidos (Alerta de Encalhe)</span>
-                            </Space>
-                        }
-                        className="shadow-sm"
-                        bordered={false}
-                    >
-                        <Table
-                            dataSource={mockLowSelling}
-                            columns={lowSellingColumns}
-                            pagination={false}
-                            size="middle"
+                <Col xs={24} sm={12} lg={8}>
+                    <Card bordered={false} className="shadow-sm">
+                        <Statistic
+                            title="Risco de Ruptura (Estoque ≤ 5)"
+                            value={metrics.lowStockCount}
+                            prefix={<TrendingDown size={20} className="mr-2" />}
+                            valueStyle={{ color: '#faad14' }}
+                        />
+                    </Card>
+                </Col>
+                <Col xs={24} sm={12} lg={8}>
+                    <Card bordered={false} className="shadow-sm">
+                        <Statistic
+                            title="Produtos Esgotados"
+                            value={metrics.outOfStockCount}
+                            prefix={<AlertCircle size={20} className="mr-2" />}
+                            valueStyle={{ color: '#ff4d4f' }}
                         />
                     </Card>
                 </Col>
             </Row>
+
+            <Row gutter={[16, 16]} className="mb-6">
+                <Col xs={24} lg={12}>
+                    <Card title="Composição do Estoque" bordered={false} className="shadow-sm">
+                        <div style={{ height: 300 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={categoryData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value">
+                                        {categoryData.map((_, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card>
+                </Col>
+                <Col xs={24} lg={12}>
+                    <Card title="Top Margens de Lucro Projetadas" bordered={false} className="shadow-sm">
+                        <div style={{ height: 300 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={topMarginData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                                    <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                                    <YAxis unit="%" axisLine={false} tickLine={false} />
+                                    <Tooltip cursor={{ fill: '#f3f4f6' }} />
+                                    <Bar dataKey="margin" fill="#9966CC" radius={[4, 4, 0, 0]} barSize={40} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card>
+                </Col>
+            </Row>
+
+            <Card title="Ações Recomendadas" bordered={false} className="shadow-sm">
+                <Table
+                    dataSource={actionableInsights}
+                    columns={insightsColumns}
+                    rowKey="id"
+                    pagination={false}
+                    size="middle"
+                    scroll={{ x: 600 }}
+                />
+            </Card>
         </div>
     );
 }
