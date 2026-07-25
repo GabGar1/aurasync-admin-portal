@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, Search, ChevronDown, Plus, RefreshCw, AlertTriangle, Trash2 } from "lucide-react";
+import { Package, Search, ChevronDown, ChevronLeft, ChevronRight, Plus, RefreshCw, AlertTriangle, Trash2 } from "lucide-react";
 import CreateProductModal from "@/components/CreateProductModal";
 
 type ApiError = {
@@ -270,149 +270,188 @@ export default function Products() {
           ) : null}
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[30px]" />
-              <TableHead>Nome do Produto</TableHead>
-              <TableHead className="w-[130px]">Categoria</TableHead>
-              <TableHead className="w-[100px]">Status</TableHead>
-              <TableHead className="w-[90px]">Variações</TableHead>
-              {admin ? <TableHead className="w-[80px] text-center">Ações</TableHead> : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={`skeleton-${i}`}>
-                  <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-48" />
-                    <Skeleton className="h-3 w-32 mt-1" />
-                  </TableCell>
-                  <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                  {admin ? <TableCell><Skeleton className="h-8 w-16 mx-auto" /></TableCell> : null}
-                </TableRow>
-              ))
-            ) : (
+        <>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[30px]" />
+                <TableHead>Nome do Produto</TableHead>
+                <TableHead className="w-[130px]">Categoria</TableHead>
+                <TableHead className="w-[100px]">Status</TableHead>
+                <TableHead className="w-[90px]">Variações</TableHead>
+                {admin ? <TableHead className="w-[80px] text-center">Ações</TableHead> : null}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-3 w-32 mt-1" />
+                    </TableCell>
+                    <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                    {admin ? <TableCell><Skeleton className="h-8 w-16 mx-auto" /></TableCell> : null}
+                  </TableRow>
+                ))
+              ) : (
               products.map((product) => (
                 <Collapsible
                   key={product.id}
                   open={expandedRows.has(product.id)}
                   onOpenChange={() => toggleRow(product.id)}
-                  asChild
                 >
-                  <>
-                    <TableRow
-                      className="cursor-pointer transition-colors hover:bg-accent/20"
-                      onClick={() => toggleRow(product.id)}
-                    >
-                      <TableCell>
-                        <ChevronDown
-                          className={`h-4 w-4 text-muted-foreground transition-transform ${
-                            expandedRows.has(product.id) ? "rotate-180" : ""
-                          }`}
-                        />
+                  <TableRow
+                    className="cursor-pointer transition-colors hover:bg-accent/20"
+                    onClick={() => toggleRow(product.id)}
+                  >
+                    <TableCell>
+                      <ChevronDown
+                        className={`h-4 w-4 text-muted-foreground transition-transform ${
+                          expandedRows.has(product.id) ? "rotate-180" : ""
+                        }`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-semibold">{product.name}</div>
+                      <div className="text-xs text-muted-foreground">{product.slug}</div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">
+                        {product.category || "Geral"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={product.is_active ? "default" : "secondary"}>
+                        {product.is_active ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {product.variants?.length || 0}
+                    </TableCell>
+                    {admin ? (
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(product);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
-                      <TableCell>
-                        <div className="font-semibold">{product.name}</div>
-                        <div className="text-xs text-muted-foreground">{product.slug}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">
-                          {product.category || "Geral"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={product.is_active ? "default" : "secondary"}>
-                          {product.is_active ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {product.variants?.length || 0}
-                      </TableCell>
-                      {admin ? (
-                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(product);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                    ) : null}
+                  </TableRow>
+                  <CollapsibleContent>
+                    {product.variants && product.variants.length > 0 ? (
+                      <TableRow className="hover:bg-accent/20">
+                        <TableCell colSpan={admin ? 6 : 5} className="p-0">
+                          <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[140px]">ID Variante</TableHead>
+                                  <TableHead>Nome</TableHead>
+                                  <TableHead className="w-[100px]">SKU</TableHead>
+                                  <TableHead className="w-[110px]">Preço</TableHead>
+                                  <TableHead className="w-[130px]">Estoque Local</TableHead>
+                                  <TableHead className="w-[140px]">Dimensões</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {product.variants.map((variant) => (
+                                  <TableRow key={variant.id}>
+                                    <TableCell className="font-mono text-[11px] text-muted-foreground">
+                                      {variant.id}
+                                    </TableCell>
+                                    <TableCell className="font-medium text-muted-foreground">
+                                      {variant.name || "Padrão"}
+                                    </TableCell>
+                                    <TableCell>
+                                      {variant.sku ? (
+                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                          {variant.sku}
+                                        </Badge>
+                                      ) : "-"}
+                                    </TableCell>
+                                    <TableCell>{formatCurrency(variant.price)}</TableCell>
+                                    <TableCell>
+                                      <StockIndicator quantity={variant.stock_quantity} />
+                                    </TableCell>
+                                    <TableCell>
+                                      <DimensionsDisplay variant={variant} />
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
                         </TableCell>
-                      ) : null}
-                    </TableRow>
-                    <CollapsibleContent asChild>
-                      <>
-                        {product.variants && product.variants.length > 0 ? (
-                          <TableRow className="hover:bg-accent/20">
-                            <TableCell colSpan={admin ? 6 : 5} className="p-0">
-                              <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead className="w-[140px]">ID Variante</TableHead>
-                                      <TableHead>Nome</TableHead>
-                                      <TableHead className="w-[100px]">SKU</TableHead>
-                                      <TableHead className="w-[110px]">Preço</TableHead>
-                                      <TableHead className="w-[130px]">Estoque Local</TableHead>
-                                      <TableHead className="w-[140px]">Dimensões</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {product.variants.map((variant) => (
-                                      <TableRow key={variant.id}>
-                                        <TableCell className="font-mono text-[11px] text-muted-foreground">
-                                          {variant.id}
-                                        </TableCell>
-                                        <TableCell className="font-medium text-muted-foreground">
-                                          {variant.name || "Padrão"}
-                                        </TableCell>
-                                        <TableCell>
-                                          {variant.sku ? (
-                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                              {variant.sku}
-                                            </Badge>
-                                          ) : "-"}
-                                        </TableCell>
-                                        <TableCell>{formatCurrency(variant.price)}</TableCell>
-                                        <TableCell>
-                                          <StockIndicator quantity={variant.stock_quantity} />
-                                        </TableCell>
-                                        <TableCell>
-                                          <DimensionsDisplay variant={variant} />
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          <TableRow className="hover:bg-accent/20">
-                            <TableCell colSpan={admin ? 6 : 5} className="p-0">
-                              <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-200">
-                                Nenhuma variação cadastrada
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </>
-                    </CollapsibleContent>
-                  </>
+                      </TableRow>
+                    ) : (
+                      <TableRow className="hover:bg-accent/20">
+                        <TableCell colSpan={admin ? 6 : 5} className="p-0">
+                          <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-200">
+                            Nenhuma variação cadastrada
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </CollapsibleContent>
                 </Collapsible>
               ))
             )}
           </TableBody>
         </Table>
+        {data && (
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Página {data.page} de {Math.ceil(data.total / data.limit)}
+              </span>
+              <Select
+                value={String(limit)}
+                onValueChange={(value) => { setLimit(Number(value)); setPage(1); }}
+              >
+                <SelectTrigger className="w-[70px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 50].map((size) => (
+                    <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= Math.ceil(data.total / data.limit)}
+              >
+                Próximo
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       <CreateProductModal
