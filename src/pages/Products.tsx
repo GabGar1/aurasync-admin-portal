@@ -61,23 +61,32 @@ export default function Products() {
       message.success(`Sincronização concluída! ${res.processed || 0} produtos atualizados.`);
       qc.invalidateQueries({ queryKey: ['products'] });
     },
-    onError: (err: any) => message.error(`Falha ao sincronizar: ${err.message}`)
+    onError: (error: Error) => message.error(`Falha ao sincronizar: ${error.message}`)
   });
 
-  // Ordenação baseada no seu tipo real: product.active
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => productsApi.delete(id),
+    onSuccess: () => {
+      message.success('Produto excluído com sucesso');
+      qc.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (err: any) => message.error(`Falha ao excluir: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`),
+  });
+
+  // Ordenação baseada no seu tipo real: product.is_active
   const sortedProducts = useMemo(() => {
     const productsArray = apiResponse?.products;
     if (!productsArray || !Array.isArray(productsArray)) return [];
 
     return [...productsArray].sort((a, b) => {
-      return (b.active ? 1 : 0) - (a.active ? 1 : 0);
+      return (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0);
     });
   }, [apiResponse]);
 
   // Expandir automaticamente as linhas quando houver termo de busca ativa
   const expandedRowKeys = useMemo(() => {
     if (!debouncedSearch) return [];
-    return sortedProducts.map(p => p.nuvemshop_id);
+    return sortedProducts.map(p => p.id);
   }, [debouncedSearch, sortedProducts]);
 
   // Sub-tabela baseada estritamente nas propriedades do seu ProductVariant
@@ -139,13 +148,6 @@ export default function Products() {
 
   const columns = [
     {
-      title: 'Nuvemshop ID',
-      dataIndex: 'nuvemshop_id',
-      key: 'nuvemshop_id',
-      width: 150,
-      render: (id: string) => <span style={{ color: '#999', fontSize: '11px', fontFamily: 'monospace' }}>{id || '-'}</span>
-    },
-    {
       title: 'Nome do Produto',
       dataIndex: 'name',
       key: 'name',
@@ -172,6 +174,30 @@ export default function Products() {
       render: (active: boolean) => (
           <Tag color={active ? 'green' : 'default'}>{active ? 'Ativo' : 'Inativo'}</Tag>
       )
+    },
+    {
+      title: 'Ações',
+      key: 'actions',
+      width: 100,
+      render: (_: unknown, record: Product) => (
+        <Button
+          danger
+          size="small"
+          loading={deleteMutation.isPending}
+          onClick={() => {
+            Modal.confirm({
+              title: 'Excluir produto?',
+              content: `Tem certeza que deseja excluir "${record.name}"?`,
+              okText: 'Excluir',
+              okType: 'danger',
+              cancelText: 'Cancelar',
+              onOk: () => deleteMutation.mutate(record.id),
+            });
+          }}
+        >
+          Excluir
+        </Button>
+      ),
     }
   ];
 
@@ -232,7 +258,7 @@ export default function Products() {
         </Card>
 
         <Table
-            rowKey="nuvemshop_id" // Alterado para mapear a chave única real do seu tipo Product
+            rowKey="id"
             loading={isLoading}
             dataSource={sortedProducts}
             columns={columns}
@@ -259,6 +285,7 @@ export default function Products() {
         <CreateProductModal
             open={modalOpen}
             onClose={() => setModalOpen(false)}
+            onSuccess={() => qc.invalidateQueries({ queryKey: ['products'] })}
         />
       </div>
   );
