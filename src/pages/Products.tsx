@@ -191,13 +191,13 @@ export default function Products() {
   const hasFilters = debouncedSearch || category !== "all";
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
+    <div className="flex flex-col h-full p-6 space-y-6">
+      <div className="shrink-0">
         <h1 className="text-2xl font-semibold">Produtos & Estoque</h1>
         <p className="text-sm text-muted-foreground">Catálogo master de produtos e variações</p>
       </div>
 
-      <Card>
+      <Card className="shrink-0">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
@@ -227,7 +227,7 @@ export default function Products() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between shrink-0">
         <p className="text-sm text-muted-foreground">
           {data ? `${data.total} resultado${data.total !== 1 ? "s" : ""}` : ""}
         </p>
@@ -245,40 +245,40 @@ export default function Products() {
         </div>
       </div>
 
-      {isError ? (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erro ao carregar produtos</AlertTitle>
-          <AlertDescription>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-              Tentar novamente
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : products.length === 0 && !isLoading ? (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <Package className="h-12 w-12 mb-4" />
-          <p className="text-lg font-medium">Nenhum produto cadastrado</p>
-          <p className="text-sm mb-4">
-            {hasFilters ? "Tente ajustar os filtros." : "Cadastre seu primeiro produto para começar."}
-          </p>
-          {admin && !hasFilters ? (
-            <Button onClick={() => setModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Novo Produto
-            </Button>
-          ) : null}
-        </div>
-      ) : (
-        <>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {isError ? (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar produtos</AlertTitle>
+            <AlertDescription>
+              <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : products.length === 0 && !isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <Package className="h-12 w-12 mb-4" />
+            <p className="text-lg font-medium">Nenhum produto cadastrado</p>
+            <p className="text-sm mb-4">
+              {hasFilters ? "Tente ajustar os filtros." : "Cadastre seu primeiro produto para começar."}
+            </p>
+            {admin && !hasFilters ? (
+              <Button onClick={() => setModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Novo Produto
+              </Button>
+            ) : null}
+          </div>
+        ) : (
           <Table className="table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8" />
                 <TableHead>Nome do Produto</TableHead>
-                <TableHead className="w-[120px] whitespace-nowrap">Categoria</TableHead>
-                <TableHead className="w-[90px] whitespace-nowrap">Status</TableHead>
-                <TableHead className="w-[80px] whitespace-nowrap">Variações</TableHead>
+                <TableHead className="w-[140px] whitespace-nowrap">Categoria</TableHead>
+                <TableHead className="w-[100px] whitespace-nowrap">Status</TableHead>
+                <TableHead className="w-[90px] whitespace-nowrap">Variações</TableHead>
                 {admin ? <TableHead className="w-[60px] text-center">Ações</TableHead> : null}
               </TableRow>
             </TableHeader>
@@ -316,8 +316,8 @@ export default function Products() {
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="font-semibold">{product.name}</div>
-                      <div className="text-xs text-muted-foreground">{product.slug}</div>
+                      <div className="truncate font-semibold">{product.name}</div>
+                      <div className="truncate text-xs text-muted-foreground">{product.slug}</div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">
@@ -353,44 +353,44 @@ export default function Products() {
                       <TableRow className="hover:bg-accent/20">
                         <TableCell colSpan={admin ? 6 : 5} className="p-0">
                           <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-[140px]">ID Variante</TableHead>
-                                  <TableHead>Nome</TableHead>
-                                  <TableHead className="w-[100px]">SKU</TableHead>
-                                  <TableHead className="w-[110px]">Preço</TableHead>
-                                  <TableHead className="w-[130px]">Estoque Local</TableHead>
-                                  <TableHead className="w-[140px]">Dimensões</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
+                            <table className="w-full table-fixed text-sm">
+                              <thead>
+                                <tr className="border-b">
+                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[140px]">ID Variante</th>
+                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nome</th>
+                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[100px]">SKU</th>
+                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[110px]">Preço</th>
+                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[130px]">Estoque Local</th>
+                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[140px]">Dimensões</th>
+                                </tr>
+                              </thead>
+                              <tbody>
                                 {product.variants.map((variant) => (
-                                  <TableRow key={variant.id}>
-                                    <TableCell className="font-mono text-[11px] text-muted-foreground">
+                                  <tr key={variant.id} className="border-b last:border-0">
+                                    <td className="p-4 align-middle font-mono text-[11px] text-muted-foreground">
                                       {variant.id}
-                                    </TableCell>
-                                    <TableCell className="font-medium text-muted-foreground">
+                                    </td>
+                                    <td className="p-4 align-middle font-medium text-muted-foreground">
                                       {variant.name || "Padrão"}
-                                    </TableCell>
-                                    <TableCell>
+                                    </td>
+                                    <td className="p-4 align-middle">
                                       {variant.sku ? (
                                         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                                           {variant.sku}
                                         </Badge>
                                       ) : "-"}
-                                    </TableCell>
-                                    <TableCell>{formatCurrency(variant.price)}</TableCell>
-                                    <TableCell>
+                                    </td>
+                                    <td className="p-4 align-middle">{formatCurrency(variant.price)}</td>
+                                    <td className="p-4 align-middle">
                                       <StockIndicator quantity={variant.stock_quantity} />
-                                    </TableCell>
-                                    <TableCell>
+                                    </td>
+                                    <td className="p-4 align-middle">
                                       <DimensionsDisplay variant={variant} />
-                                    </TableCell>
-                                  </TableRow>
+                                    </td>
+                                  </tr>
                                 ))}
-                              </TableBody>
-                            </Table>
+                              </tbody>
+                            </table>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -409,49 +409,50 @@ export default function Products() {
             )}
           </TableBody>
         </Table>
-        {data && (
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Página {data.page} de {Math.ceil(data.total / data.limit)}
-              </span>
-              <Select
-                value={String(limit)}
-                onValueChange={(value) => { setLimit(Number(value)); setPage(1); }}
-              >
-                <SelectTrigger className="w-[70px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[10, 20, 50].map((size) => (
-                    <SelectItem key={size} value={String(size)}>{size}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= Math.ceil(data.total / data.limit)}
-              >
-                Próximo
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
         )}
-        </>
+      </div>
+
+      {data && (
+        <div className="flex items-center justify-between px-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Página {data.page} de {Math.ceil(data.total / data.limit)}
+            </span>
+            <Select
+              value={String(limit)}
+              onValueChange={(value) => { setLimit(Number(value)); setPage(1); }}
+            >
+              <SelectTrigger className="w-[70px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 50].map((size) => (
+                  <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= Math.ceil(data.total / data.limit)}
+            >
+              Próximo
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       )}
 
       <CreateProductModal
