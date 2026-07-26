@@ -141,9 +141,134 @@ export interface UpdateUserPayload {
   status?: string;
 }
 
-export interface DashboardStats {
-  totalSales: number;
-  activeProducts: number;
-  pendingOrders: number;
-  lowStockAlerts: number;
+export interface RevenueTrendItem {
+  date: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface HourStats {
+  hour: number;
+  orders: number;
+  revenue: number;
+}
+
+export interface TopProductItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  total_sold: number;
+  revenue: number;
+}
+
+export interface OrderStatusStats {
+  status: string;
+  count: number;
+}
+
+export interface RepeatCustomers {
+  unique_customers: number;
+  repeat_customers: number;
+  repeat_rate: number;
+}
+
+export interface OrdersResponse {
+  by_hour: HourStats[];
+  top_products: TopProductItem[];
+  average_order_value: number;
+  revenue_trend: RevenueTrendItem[];
+  by_status: OrderStatusStats[];
+  repeat_customers: RepeatCustomers;
+}
+
+export interface StorefrontStats {
+  storefront: string | null;
+  orders: number;
+  revenue: number;
+}
+
+export interface ProvinceStats {
+  province: string | null;
+  orders: number;
+  revenue: number;
+}
+
+export interface CampaignStats {
+  campaign: string | null;
+  orders: number;
+  revenue: number;
+  aov: number;
+}
+
+export interface SourceStats {
+  source: string | null;
+  medium: string | null;
+  orders: number;
+  revenue: number;
+}
+
+export interface PaymentMethodStats {
+  method: string | null;
+  orders: number;
+  revenue: number;
+}
+
+export interface MarketingResponse {
+  by_storefront: StorefrontStats[];
+  by_province: ProvinceStats[];
+  by_campaign: CampaignStats[];
+  by_source: SourceStats[];
+  by_payment_method: PaymentMethodStats[];
+}
+
+export interface LowStockItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  sku: string | null;
+  stock: number;
+}
+
+export interface NoSalesItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  stock: number;
+}
+
+export interface TurnoverItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  sales_qty_30d: number;
+  avg_stock: number;
+  turnover: number;
+}
+
+export interface StockValueByCategory {
+  category: string | null;
+  total_value: number;
+  variant_count: number;
+}
+
+export interface DeadStockItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  stock: number;
+  days_without_sale: number;
+}
+
+export interface StockResponse {
+  low_stock: LowStockItem[];
+  no_sales_30d: NoSalesItem[];
+  turnover_rate: TurnoverItem[];
+  stock_value_by_category: StockValueByCategory[];
+  dead_stock: DeadStockItem[];
+}
+
+export interface UserStats {
+  total: number;
+  byRole: Record<string, number>;
+  recent: number;
 }

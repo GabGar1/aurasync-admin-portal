@@ -3,7 +3,8 @@ import type {
   LoginPayload, LoginResponse, Product, CreateProductPayload,
   GetProductsResponse, Order, CreateOrderPayload, GetOrdersResponse,
   InventoryTransaction, CreateInventoryPayload, GetInventoryResponse,
-  DashboardStats, User, CreateUserPayload, UpdateUserPayload, GetUsersResponse,
+  User, CreateUserPayload, UpdateUserPayload, GetUsersResponse,
+  OrdersResponse, MarketingResponse, StockResponse, UserStats,
 } from '@/types';
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3333/api';
@@ -40,8 +41,20 @@ export const authApi = {
 };
 
 export const dashboardApi = {
-  getStats: async (): Promise<DashboardStats> => {
-    const response = await api.get<DashboardStats>('/dashboard/stats');
+  getOrders: async (days?: number): Promise<OrdersResponse> => {
+    const response = await api.get<OrdersResponse>('/dashboard/orders', { params: { days } });
+    return response.data;
+  },
+  getMarketing: async (days?: number): Promise<MarketingResponse> => {
+    const response = await api.get<MarketingResponse>('/dashboard/marketing', { params: { days } });
+    return response.data;
+  },
+  getStock: async (): Promise<StockResponse> => {
+    const response = await api.get<StockResponse>('/dashboard/stock');
+    return response.data;
+  },
+  getUserStats: async (): Promise<UserStats> => {
+    const response = await api.get<UserStats>('/users/stats');
     return response.data;
   },
 };
