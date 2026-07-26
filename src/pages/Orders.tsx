@@ -166,13 +166,13 @@ export default function Orders() {
   const orders = data?.orders || [];
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
+    <div className="flex flex-col h-full p-6 space-y-6">
+      <div className="shrink-0">
         <h1 className="text-2xl font-semibold">Pedidos</h1>
         <p className="text-sm text-muted-foreground">Gerenciamento de pedidos</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4 shrink-0">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -199,7 +199,7 @@ export default function Orders() {
         </Select>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between shrink-0">
         <p className="text-sm text-muted-foreground">
           {data ? `${data.total} resultado${data.total !== 1 ? 's' : ''}` : ''}
         </p>
@@ -217,131 +217,135 @@ export default function Orders() {
         </div>
       </div>
 
-      {isError ? (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erro ao carregar pedidos</AlertTitle>
-          <AlertDescription>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-              Tentar novamente
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : orders.length === 0 && !isLoading ? (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <ShoppingCart className="h-12 w-12 mb-4" />
-          <p className="text-lg font-medium">Nenhum pedido encontrado</p>
-          <p className="text-sm mb-4">Tente ajustar os filtros ou crie um novo pedido.</p>
-          {admin ? (
-            <Button onClick={() => setCreateSheetOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Novo Pedido
-            </Button>
-          ) : null}
-        </div>
-      ) : (
-        <>
-          <Table className="table-fixed">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]">ID</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="w-[100px] whitespace-nowrap">Data</TableHead>
-                <TableHead className="w-[110px] whitespace-nowrap">Status</TableHead>
-                <TableHead className="w-[110px] text-right whitespace-nowrap">Total</TableHead>
-                <TableHead className="w-[60px] text-center">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={`skeleton-${i}`}>
-                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8 mx-auto rounded" /></TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                orders.map((order) => (
-                  <TableRow
-                    key={order.id}
-                    className="cursor-pointer"
-                    onClick={() => handleRowClick(order)}
-                  >
-                    <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}</TableCell>
-                    <TableCell className="font-medium">{order.customer_name}</TableCell>
-                    <TableCell>{formatDate(order.created_at)}</TableCell>
-                    <TableCell>
-                      <Badge className={statusBadgeClass[order.status] || ''} variant={order.status === 'CANCELED' ? 'destructive' : 'default'}>
-                        {statusLabel(order.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(order.total_amount)}</TableCell>
-                    <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                      {admin ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              disabled={order.status === 'PAID'}
-                              onClick={() => updateMutation.mutate({ id: order.id, status: 'PAID' })}
-                            >
-                              Marcar como Pago
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={order.status === 'SHIPPED'}
-                              onClick={() => updateMutation.mutate({ id: order.id, status: 'SHIPPED' })}
-                            >
-                              Marcar como Enviado
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              disabled={order.status === 'CANCELED'}
-                              onClick={() => handleCancelClick(order.id)}
-                            >
-                              Cancelar Pedido
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : null}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {isError ? (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar pedidos</AlertTitle>
+            <AlertDescription>
+              <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : orders.length === 0 && !isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <ShoppingCart className="h-12 w-12 mb-4" />
+            <p className="text-lg font-medium">Nenhum pedido encontrado</p>
+            <p className="text-sm mb-4">Tente ajustar os filtros ou crie um novo pedido.</p>
+            {admin ? (
+              <Button onClick={() => setCreateSheetOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Novo Pedido
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <>
+            <Table className="table-fixed">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[90px]">ID</TableHead>
+                  <TableHead className="min-w-0 w-auto">Cliente</TableHead>
+                  <TableHead className="w-[110px]">Data</TableHead>
+                  <TableHead className="w-[120px]">Status</TableHead>
+                  <TableHead className="w-[120px] text-right">Total</TableHead>
+                  <TableHead className="w-[60px] text-center">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-8 mx-auto rounded" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  orders.map((order) => (
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer"
+                      onClick={() => handleRowClick(order)}
+                    >
+                      <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}</TableCell>
+                      <TableCell className="font-medium truncate max-w-0">
+                        <span className="truncate block">{order.customer_name}</span>
+                      </TableCell>
+                      <TableCell>{formatDate(order.created_at)}</TableCell>
+                      <TableCell>
+                        <Badge className={statusBadgeClass[order.status] || ''} variant={order.status === 'CANCELED' ? 'destructive' : 'default'}>
+                          {statusLabel(order.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">{formatCurrency(order.total_amount)}</TableCell>
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                        {admin ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                disabled={order.status === 'PAID'}
+                                onClick={() => updateMutation.mutate({ id: order.id, status: 'PAID' })}
+                              >
+                                Marcar como Pago
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={order.status === 'SHIPPED'}
+                                onClick={() => updateMutation.mutate({ id: order.id, status: 'SHIPPED' })}
+                              >
+                                Marcar como Enviado
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                disabled={order.status === 'CANCELED'}
+                                onClick={() => handleCancelClick(order.id)}
+                              >
+                                Cancelar Pedido
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </>
+        )}
+      </div>
 
-          {totalPages > 1 ? (
-            <div className="flex items-center justify-center gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <Button
-                  key={p}
-                  variant={p === page ? 'default' : 'outline'}
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </Button>
-              ))}
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : null}
-        </>
-      )}
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-center gap-1 shrink-0">
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <Button
+              key={p}
+              variant={p === page ? 'default' : 'outline'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPage(p)}
+            >
+              {p}
+            </Button>
+          ))}
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : null}
 
       <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
         <SheetContent side="right" className="w-[640px] sm:max-w-[640px] overflow-y-auto">
