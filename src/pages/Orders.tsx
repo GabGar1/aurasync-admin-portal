@@ -273,9 +273,9 @@ export default function Orders() {
                       onClick={() => handleRowClick(order)}
                     >
                       <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}</TableCell>
-                      <TableCell className="font-medium truncate max-w-0">
-                        <span className="truncate block">{order.customer_name}</span>
-                      </TableCell>
+<TableCell className="font-medium">
+  <span className="truncate block max-w-full">{order.customer_name}</span>
+</TableCell>
                       <TableCell>{formatDate(order.created_at)}</TableCell>
                       <TableCell>
                         <Badge className={statusBadgeClass[order.status] || ''} variant={order.status === 'CANCELED' ? 'destructive' : 'default'}>
