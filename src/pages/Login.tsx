@@ -1,44 +1,80 @@
-import { Form, Input, Button, Card, Typography, message } from 'antd';
-import { MailOutlined, LockOutlined } from '@ant-design/icons';
-import { useMutation } from '@tanstack/react-query';
-import { authApi } from '@/services/api';
-import { useAuth } from '@/hooks/useAuth';
-import type { LoginPayload } from '@/types';
-
-const { Title, Text } = Typography;
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Mail, Lock, LogIn } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { authApi } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export default function Login() {
   const { login } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const mutation = useMutation({
-    mutationFn: (payload: LoginPayload) => authApi.login(payload),
+    mutationFn: (payload: { email: string; password: string }) => authApi.login(payload),
     onSuccess: (data) => {
-      message.success('Welcome back!');
+      toast.success("Welcome back!");
       login(data.token, data.user);
+      navigate("/");
     },
-    onError: () => message.error('Login failed'),
+    onError: () => toast.error("Login failed"),
   });
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    mutation.mutate({ email, password });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAF9F6' }}>
-      <Card className="w-full max-w-md shadow-lg" bordered={false}>
-        <div className="text-center mb-8">
-          <Title level={2} style={{ color: '#9966CC', marginBottom: 4 }}>AuraSync</Title>
-          <Text type="secondary">E-commerce Management System</Text>
+    <div className="min-h-screen flex items-center justify-center bg-background motion-safe:animate-fade-in-up">
+      <Card className="w-full max-w-md border-t-4 border-t-primary">
+        <div className="text-center mt-6 mb-2">
+          <h1 className="text-2xl font-bold" style={{ color: "#9966CC" }}>AuraSync</h1>
+          <p className="text-sm text-muted-foreground">E-commerce Management System</p>
         </div>
-        <Form layout="vertical" onFinish={(values) => mutation.mutate(values)} autoComplete="off">
-          <Form.Item name="email" rules={[{ required: true, type: 'email', message: 'Valid email required' }]}>
-            <Input prefix={<MailOutlined />} placeholder="Email" size="large" />
-          </Form.Item>
-          <Form.Item name="password" rules={[{ required: true, message: 'Password required' }]}>
-            <Input.Password prefix={<LockOutlined />} placeholder="Password" size="large" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block size="large" loading={mutation.isPending}>
-              Sign In
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Email"
+                  className="pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Password"
+                  className="pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <Button type="submit" className="w-full" size="lg" disabled={mutation.isPending}>
+              {mutation.isPending ? "Entrando..." : "Sign In"}
             </Button>
-          </Form.Item>
-        </Form>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );
