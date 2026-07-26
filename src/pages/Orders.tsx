@@ -241,15 +241,15 @@ export default function Orders() {
         </div>
       ) : (
         <>
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">ID</TableHead>
+                <TableHead className="w-[80px]">ID</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead className="w-[120px]">Data</TableHead>
-                <TableHead className="w-[120px]">Status</TableHead>
-                <TableHead className="w-[130px] text-right">Total</TableHead>
-                <TableHead className="w-[80px] text-center">Ações</TableHead>
+                <TableHead className="w-[100px] whitespace-nowrap">Data</TableHead>
+                <TableHead className="w-[110px] whitespace-nowrap">Status</TableHead>
+                <TableHead className="w-[110px] text-right whitespace-nowrap">Total</TableHead>
+                <TableHead className="w-[60px] text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

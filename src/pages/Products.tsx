@@ -271,15 +271,15 @@ export default function Products() {
         </div>
       ) : (
         <>
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[30px]" />
+                <TableHead className="w-8" />
                 <TableHead>Nome do Produto</TableHead>
-                <TableHead className="w-[130px]">Categoria</TableHead>
-                <TableHead className="w-[100px]">Status</TableHead>
-                <TableHead className="w-[90px]">Variações</TableHead>
-                {admin ? <TableHead className="w-[80px] text-center">Ações</TableHead> : null}
+                <TableHead className="w-[120px] whitespace-nowrap">Categoria</TableHead>
+                <TableHead className="w-[90px] whitespace-nowrap">Status</TableHead>
+                <TableHead className="w-[80px] whitespace-nowrap">Variações</TableHead>
+                {admin ? <TableHead className="w-[60px] text-center">Ações</TableHead> : null}
               </TableRow>
             </TableHeader>
             <TableBody>

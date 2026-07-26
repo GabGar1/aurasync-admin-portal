@@ -85,7 +85,7 @@ export default function Layout() {
             {sidebarItems.find((i) => location.pathname === i.url || location.pathname.startsWith(i.url + "/"))?.title || "AuraSync"}
           </span>
         </header>
-        <main className="p-8">
+        <main className="p-6">
           <Outlet />
         </main>
         <Toaster />
