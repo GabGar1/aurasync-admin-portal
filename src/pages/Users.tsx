@@ -1,12 +1,24 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
-import { Table, Button, Tag, Modal, Form, Input, Select, Space, message, Card, Row, Col } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Search, Plus, MoreHorizontal, AlertTriangle, UsersIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '@/services/api';
-import type { User, CreateUserPayload, UpdateUserPayload } from '@/types';
+import type { User, CreateUserPayload, UpdateUserPayload, GetUsersResponse } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
+import { formatDate } from '@/lib/formatters';
+import { toast } from 'sonner';
+
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -17,42 +29,62 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+function RoleBadge({ role }: { role: string }) {
+  if (role === 'ADMIN') {
+    return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">{role}</Badge>;
+  }
+  if (role === 'SUPER_ADMIN') {
+    return <Badge variant="outline" className="text-purple-700 border-purple-300">{role}</Badge>;
+  }
+  return <Badge variant="secondary">{role}</Badge>;
+}
+
+function StatusDisplay({ status }: { status: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`h-2 w-2 rounded-full ${status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+      <span className="text-sm">{status === 'active' ? 'Ativo' : 'Inativo'}</span>
+    </span>
+  );
+}
+
 export default function Users() {
   const { getUser } = useAuth();
   const currentUser = getUser();
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
-  const debouncedSearch = useDebounce(search, 500);
+  const admin = isAdmin(currentUser?.role);
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const debouncedSearch = useDebounce(search, 500);
+
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+
+  const { data, isLoading, isError, refetch } = useQuery<GetUsersResponse>({
     queryKey: ['users', page, limit, debouncedSearch, roleFilter],
     queryFn: () => usersApi.getAll({
       page,
       limit,
       search: debouncedSearch || undefined,
-      role: roleFilter || undefined,
+      role: roleFilter !== 'all' ? roleFilter : undefined,
     }),
     placeholderData: (previousData) => previousData,
   });
 
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [createForm] = Form.useForm();
-  const [editForm] = Form.useForm();
-
   const createMutation = useMutation({
     mutationFn: (payload: CreateUserPayload) => usersApi.create(payload),
     onSuccess: () => {
-      message.success('Usuário criado com sucesso');
+      toast.success('Usuário criado com sucesso');
       qc.invalidateQueries({ queryKey: ['users'] });
-      setCreateModalOpen(false);
-      createForm.resetFields();
+      setCreateDialogOpen(false);
     },
-    onError: (err: any) => message.error(
+    onError: (err: any) => toast.error(
       `Falha ao criar: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`
     ),
   });
@@ -61,12 +93,12 @@ export default function Users() {
     mutationFn: ({ id, payload }: { id: string; payload: UpdateUserPayload }) =>
       usersApi.update(id, payload),
     onSuccess: () => {
-      message.success('Usuário atualizado');
+      toast.success('Usuário atualizado');
       qc.invalidateQueries({ queryKey: ['users'] });
-      setEditModalOpen(false);
+      setEditDialogOpen(false);
       setEditingUser(null);
     },
-    onError: (err: any) => message.error(
+    onError: (err: any) => toast.error(
       `Falha ao atualizar: ${err?.response?.data?.error || err?.message}`
     ),
   });
@@ -74,215 +106,364 @@ export default function Users() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => usersApi.delete(id),
     onSuccess: () => {
-      message.success('Usuário removido');
+      toast.success('Usuário removido');
       qc.invalidateQueries({ queryKey: ['users'] });
+      setDeleteDialogOpen(false);
+      setDeletingUser(null);
     },
-    onError: (err: any) => message.error(
+    onError: (err: any) => toast.error(
       `Falha ao remover: ${err?.response?.data?.error || err?.message}`
     ),
   });
 
-  const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 100 },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    {
-      title: 'Nome',
-      key: 'name',
-      render: (_: any, r: User) => `${r.first_name} ${r.last_name}`,
-    },
-    {
-      title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
-      render: (r: string) => <Tag color={r === 'ADMIN' || r === 'SUPER_ADMIN' ? 'purple' : 'default'}>{r}</Tag>,
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (s: string) => <Tag color={s === 'active' ? 'green' : 'red'}>{s}</Tag>,
-    },
-    {
-      title: 'Criado em',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      render: (v: string) => v ? new Date(v).toLocaleDateString('pt-BR') : '-',
-    },
-    {
-      title: 'Ações',
-      key: 'actions',
-      width: 160,
-      render: (_: any, record: User) => (
-        <Space>
-          {isAdmin(currentUser?.role) && (
-            <Button
-              size="small"
-              onClick={() => {
-                setEditingUser(record);
-                editForm.setFieldsValue({
-                  first_name: record.first_name,
-                  last_name: record.last_name,
-                  status: record.status,
-                });
-                setEditModalOpen(true);
-              }}
-            >
-              Editar
-            </Button>
-          )}
-          {isAdmin(currentUser?.role) && (
-            <Button
-              danger
-              size="small"
-              onClick={() => {
-                Modal.confirm({
-                  title: 'Remover usuário?',
-                  content: `Tem certeza que deseja remover ${record.first_name} ${record.last_name}?`,
-                  okText: 'Remover',
-                  okType: 'danger',
-                  cancelText: 'Cancelar',
-                  onOk: () => deleteMutation.mutate(record.id),
-                });
-              }}
-            >
-              Remover
-            </Button>
-          )}
-        </Space>
-      ),
-    },
-  ];
+  const totalPages = data ? Math.ceil(data.total / limit) : 1;
+  const users = data?.users || [];
+
+  function handleEditClick(user: User) {
+    setEditingUser(user);
+    setEditDialogOpen(true);
+  }
+
+  function handleDeleteClick(user: User) {
+    setDeletingUser(user);
+    setDeleteDialogOpen(true);
+  }
+
+  function confirmDelete() {
+    if (deletingUser) {
+      deleteMutation.mutate(deletingUser.id);
+    }
+  }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Usuários</h1>
-          <p className="text-gray-400 text-xs">Gerenciamento de usuários do sistema</p>
+          <p className="text-sm text-muted-foreground">Gerenciamento de usuários do sistema</p>
         </div>
-        {isAdmin(currentUser?.role) && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
+        {admin && (
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
             Novo Usuário
           </Button>
         )}
       </div>
 
-      <Card className="mb-6" size="small">
-        <Row gutter={[16, 16]}>
-          <Col xs={24} md={14}>
-            <Input
-              placeholder="Pesquisar por nome ou email..."
-              prefix={<SearchOutlined className="text-gray-400" />}
-              value={search}
-              allowClear
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Pesquisar por nome ou email..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          />
+        </div>
+        <Select
+          value={roleFilter}
+          onValueChange={(value) => { setRoleFilter(value); setPage(1); }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filtrar por Role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Roles</SelectItem>
+            <SelectItem value="ADMIN">ADMIN</SelectItem>
+            <SelectItem value="EMPLOYEE">EMPLOYEE</SelectItem>
+            <SelectItem value="SUPER_ADMIN">SUPER_ADMIN</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isError ? (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Erro ao carregar usuários</AlertTitle>
+          <AlertDescription>
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
+              Tentar novamente
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : users.length === 0 && !isLoading ? (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+          <UsersIcon className="h-12 w-12 mb-4" />
+          <p className="text-lg font-medium">Nenhum usuário encontrado</p>
+          <p className="text-sm">Tente ajustar os filtros ou crie um novo usuário.</p>
+          {admin ? (
+            <Button onClick={() => setCreateDialogOpen(true)} className="mt-4">
+              <Plus className="h-4 w-4 mr-1" />
+              Novo Usuário
+            </Button>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Criado em</TableHead>
+                {admin && <TableHead className="w-[80px] text-center">Ações</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32 mb-1" />
+                      <Skeleton className="h-3 w-40" />
+                    </TableCell>
+                    <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    {admin && <TableCell><Skeleton className="h-8 w-8 mx-auto rounded" /></TableCell>}
+                  </TableRow>
+                ))
+              ) : (
+                users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="font-medium">{user.first_name} {user.last_name}</div>
+                      <div className="text-sm text-muted-foreground">{user.email}</div>
+                    </TableCell>
+                    <TableCell>
+                      <RoleBadge role={user.role} />
+                    </TableCell>
+                    <TableCell>
+                      <StatusDisplay status={user.status} />
+                    </TableCell>
+                    <TableCell>{formatDate(user.created_at)}</TableCell>
+                    {admin && (
+                      <TableCell className="text-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditClick(user)}>
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => handleDeleteClick(user)}
+                            >
+                              Remover
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+          {totalPages > 1 ? (
+            <div className="flex items-center justify-center gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <Button
+                  key={p}
+                  variant={p === page ? 'default' : 'outline'}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage(p)}
+                >
+                  {p}
+                </Button>
+              ))}
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : null}
+        </>
+      )}
+
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Usuário</DialogTitle>
+            <DialogDescription>Preencha os dados para criar um novo usuário</DialogDescription>
+          </DialogHeader>
+          <CreateUserForm
+            onSubmit={(payload) => createMutation.mutate(payload)}
+            isPending={createMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogDescription>Atualize os dados do usuário</DialogDescription>
+          </DialogHeader>
+          {editingUser && (
+            <EditUserForm
+              user={editingUser}
+              onSubmit={(payload) => updateMutation.mutate({ id: editingUser.id, payload })}
+              isPending={updateMutation.isPending}
             />
-          </Col>
-          <Col xs={24} md={10}>
-            <Select
-              className="w-full"
-              placeholder="Filtrar por Role"
-              allowClear
-              value={roleFilter}
-              onChange={(value) => { setRoleFilter(value); setPage(1); }}
-              options={[
-                { value: 'ADMIN', label: 'ADMIN' },
-                { value: 'EMPLOYEE', label: 'EMPLOYEE' },
-                { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN' },
-              ]}
-            />
-          </Col>
-        </Row>
-      </Card>
+          )}
+        </DialogContent>
+      </Dialog>
 
-      <Table
-        rowKey="id"
-        loading={isLoading}
-        dataSource={data?.users || []}
-        columns={columns}
-        bordered
-        size="middle"
-        pagination={{
-          current: page,
-          pageSize: limit,
-          total: data?.total || 0,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50'],
-          onChange: (p, s) => { setPage(p); setLimit(s); },
-        }}
-      />
-
-      {/* Create Modal */}
-      <Modal
-        title="Novo Usuário"
-        open={createModalOpen}
-        onCancel={() => { setCreateModalOpen(false); createForm.resetFields(); }}
-        onOk={() => createForm.submit()}
-        okText="Criar"
-        cancelText="Cancelar"
-        confirmLoading={createMutation.isPending}
-        destroyOnClose
-      >
-        <Form form={createForm} layout="vertical" onFinish={(values) => {
-          createMutation.mutate({
-            email: values.email,
-            password: values.password,
-            first_name: values.first_name,
-            last_name: values.last_name,
-          });
-        }}>
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="password" label="Senha" rules={[{ required: true, min: 6 }]}>
-            <Input.Password />
-          </Form.Item>
-          <Form.Item name="first_name" label="Nome" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="last_name" label="Sobrenome" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Edit Modal */}
-      <Modal
-        title="Editar Usuário"
-        open={editModalOpen}
-        onCancel={() => { setEditModalOpen(false); setEditingUser(null); editForm.resetFields(); }}
-        onOk={() => editForm.submit()}
-        okText="Salvar"
-        cancelText="Cancelar"
-        confirmLoading={updateMutation.isPending}
-        destroyOnClose
-      >
-        <Form form={editForm} layout="vertical" onFinish={(values) => {
-          if (editingUser) {
-            updateMutation.mutate({
-              id: editingUser.id,
-              payload: {
-                first_name: values.first_name,
-                last_name: values.last_name,
-                status: values.status,
-              },
-            });
-          }
-        }}>
-          <Form.Item name="first_name" label="Nome" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="last_name" label="Sobrenome" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="status" label="Status" rules={[{ required: true }]}>
-            <Select options={[
-              { value: 'active', label: 'active' },
-              { value: 'inactive', label: 'inactive' },
-            ]} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover {deletingUser?.first_name} {deletingUser?.last_name}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+function CreateUserForm({ onSubmit, isPending }: { onSubmit: (payload: CreateUserPayload) => void; isPending: boolean }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || !password || !firstName.trim() || !lastName.trim()) return;
+    onSubmit({
+      email: email.trim(),
+      password,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 py-4">
+      <div className="space-y-2">
+        <Label htmlFor="create-email">Email</Label>
+        <Input
+          id="create-email"
+          type="email"
+          placeholder="email@exemplo.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="create-password">Senha</Label>
+        <Input
+          id="create-password"
+          type="password"
+          placeholder="Mínimo 6 caracteres"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="create-first_name">Nome</Label>
+        <Input
+          id="create-first_name"
+          placeholder="Nome"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="create-last_name">Sobrenome</Label>
+        <Input
+          id="create-last_name"
+          placeholder="Sobrenome"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          required
+        />
+      </div>
+      <DialogFooter>
+        <Button type="submit" disabled={isPending || !email.trim() || !password || !firstName.trim() || !lastName.trim()}>
+          {isPending ? 'Criando...' : 'Criar'}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function EditUserForm({ user, onSubmit, isPending }: { user: User; onSubmit: (payload: UpdateUserPayload) => void; isPending: boolean }) {
+  const [firstName, setFirstName] = useState(user.first_name);
+  const [lastName, setLastName] = useState(user.last_name);
+  const [status, setStatus] = useState(user.status);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!firstName.trim() || !lastName.trim()) return;
+    onSubmit({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      status,
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 py-4">
+      <div className="space-y-2">
+        <Label htmlFor="edit-first_name">Nome</Label>
+        <Input
+          id="edit-first_name"
+          placeholder="Nome"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="edit-last_name">Sobrenome</Label>
+        <Input
+          id="edit-last_name"
+          placeholder="Sobrenome"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="edit-status">Status</Label>
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger id="edit-status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">active</SelectItem>
+            <SelectItem value="inactive">inactive</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <DialogFooter>
+        <Button type="submit" disabled={isPending || !firstName.trim() || !lastName.trim()}>
+          {isPending ? 'Salvando...' : 'Salvar'}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }
