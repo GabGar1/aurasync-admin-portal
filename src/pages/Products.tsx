@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi } from "@/services/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -191,7 +191,7 @@ export default function Products() {
   const hasFilters = debouncedSearch || category !== "all";
 
   return (
-    <div className="flex flex-col h-full p-6 space-y-6">
+    <div className="flex flex-col p-6 space-y-6">
       <div className="shrink-0">
         <h1 className="text-2xl font-semibold">Produtos & Estoque</h1>
         <p className="text-sm text-muted-foreground">Catálogo master de produtos e variações</p>
@@ -245,17 +245,19 @@ export default function Products() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div>
         {isError ? (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Erro ao carregar produtos</AlertTitle>
-            <AlertDescription>
-              <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-                Tentar novamente
-              </Button>
-            </AlertDescription>
-          </Alert>
+          <div className="flex items-center justify-center py-16">
+            <Alert variant="destructive" className="w-full max-w-lg">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Erro ao carregar produtos</AlertTitle>
+              <AlertDescription>
+                <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
+                  Tentar novamente
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
         ) : products.length === 0 && !isLoading ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <Package className="h-12 w-12 mb-4" />
@@ -271,144 +273,142 @@ export default function Products() {
             ) : null}
           </div>
         ) : (
-          <Table className="table-fixed">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8" />
-                <TableHead>Nome do Produto</TableHead>
-                <TableHead className="w-[140px] whitespace-nowrap">Categoria</TableHead>
-                <TableHead className="w-[100px] whitespace-nowrap">Status</TableHead>
-                <TableHead className="w-[90px] whitespace-nowrap">Variações</TableHead>
-                {admin ? <TableHead className="w-[60px] text-center">Ações</TableHead> : null}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={`skeleton-${i}`}>
-                    <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-48" />
-                      <Skeleton className="h-3 w-32 mt-1" />
-                    </TableCell>
-                    <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                    {admin ? <TableCell><Skeleton className="h-8 w-16 mx-auto" /></TableCell> : null}
-                  </TableRow>
-                ))
-              ) : (
-              products.map((product) => (
-                <Collapsible
-                  key={product.id}
-                  open={expandedRows.has(product.id)}
-                  onOpenChange={() => toggleRow(product.id)}
-                >
-                  <TableRow
-                    className="cursor-pointer transition-colors hover:bg-accent/20"
-                    onClick={() => toggleRow(product.id)}
-                  >
-                    <TableCell>
-                      <ChevronDown
-                        className={`h-4 w-4 text-muted-foreground transition-transform ${
-                          expandedRows.has(product.id) ? "rotate-180" : ""
-                        }`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="truncate font-semibold">{product.name}</div>
-                      <div className="truncate text-xs text-muted-foreground">{product.slug}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">
-                        {product.category || "Geral"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={product.is_active ? "default" : "secondary"}>
-                        {product.is_active ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {product.variants?.length || 0}
-                    </TableCell>
-                    {admin ? (
-                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(product);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+          <div className="[&>div]:overflow-visible">
+            <Table className="table-fixed">
+              <TableHeader className="sticky top-0 z-10 bg-background">
+                <TableRow>
+                  <TableHead className="w-[3%] min-w-[2rem]" />
+                  <TableHead>Nome do Produto</TableHead>
+                  <TableHead className="w-[18%]">Categoria</TableHead>
+                  <TableHead className="w-[13%]">Status</TableHead>
+                  <TableHead className="w-[11%]">Variações</TableHead>
+                  {admin ? <TableHead className="w-[8%] text-center">Ações</TableHead> : null}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-48" />
+                        <Skeleton className="h-3 w-32 mt-1" />
                       </TableCell>
-                    ) : null}
-                  </TableRow>
-                  <CollapsibleContent>
-                    {product.variants && product.variants.length > 0 ? (
-                      <TableRow className="hover:bg-accent/20">
-                        <TableCell colSpan={admin ? 6 : 5} className="p-0">
-                          <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <table className="w-full table-fixed text-sm">
-                              <thead>
-                                <tr className="border-b">
-                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[140px]">ID Variante</th>
-                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nome</th>
-                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[100px]">SKU</th>
-                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[110px]">Preço</th>
-                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[130px]">Estoque Local</th>
-                                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[140px]">Dimensões</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {product.variants.map((variant) => (
-                                  <tr key={variant.id} className="border-b last:border-0">
-                                    <td className="p-4 align-middle font-mono text-[11px] text-muted-foreground">
-                                      {variant.id}
-                                    </td>
-                                    <td className="p-4 align-middle font-medium text-muted-foreground">
-                                      {variant.name || "Padrão"}
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                      {variant.sku ? (
-                                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                          {variant.sku}
-                                        </Badge>
-                                      ) : "-"}
-                                    </td>
-                                    <td className="p-4 align-middle">{formatCurrency(variant.price)}</td>
-                                    <td className="p-4 align-middle">
-                                      <StockIndicator quantity={variant.stock_quantity} />
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                      <DimensionsDisplay variant={variant} />
-                                    </td>
+                      <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                      {admin ? <TableCell><Skeleton className="h-8 w-16 mx-auto" /></TableCell> : null}
+                    </TableRow>
+                  ))
+                ) : (
+                products.map((product) => (
+                  <React.Fragment key={product.id}>
+                    <TableRow
+                      key={`${product.id}-data`}
+                      className="cursor-pointer transition-colors hover:bg-accent/20"
+                      onClick={() => toggleRow(product.id)}
+                    >
+                      <TableCell>
+                        <ChevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform ${
+                            expandedRows.has(product.id) ? "rotate-180" : ""
+                          }`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="truncate font-semibold">{product.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">{product.slug}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">
+                          {product.category || "Geral"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={product.is_active ? "default" : "secondary"}>
+                          {product.is_active ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {product.variants?.length || 0}
+                      </TableCell>
+                      {admin ? (
+                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(product);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                    {expandedRows.has(product.id) && (
+                      product.variants && product.variants.length > 0 ? (
+                        <TableRow key={`${product.id}-variants`} className="hover:bg-accent/20">
+                          <TableCell colSpan={admin ? 6 : 5} className="p-0">
+                            <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                              <table className="w-full table-fixed text-sm">
+                                <thead>
+                                  <tr className="border-b">
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[140px]">ID Variante</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nome</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[100px]">SKU</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[110px]">Preço</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[130px]">Estoque Local</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[140px]">Dimensões</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      <TableRow className="hover:bg-accent/20">
-                        <TableCell colSpan={admin ? 6 : 5} className="p-0">
-                          <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-200">
-                            Nenhuma variação cadastrada
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                                </thead>
+                                <tbody>
+                                  {product.variants.map((variant) => (
+                                    <tr key={variant.id} className="border-b last:border-0">
+                                      <td className="p-4 align-middle font-mono text-[11px] text-muted-foreground">
+                                        {variant.id}
+                                      </td>
+                                      <td className="p-4 align-middle font-medium text-muted-foreground">
+                                        {variant.name || "Padrão"}
+                                      </td>
+                                      <td className="p-4 align-middle">
+                                        {variant.sku ? (
+                                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                            {variant.sku}
+                                          </Badge>
+                                        ) : "-"}
+                                      </td>
+                                      <td className="p-4 align-middle">{formatCurrency(variant.price)}</td>
+                                      <td className="p-4 align-middle">
+                                        <StockIndicator quantity={variant.stock_quantity} />
+                                      </td>
+                                      <td className="p-4 align-middle">
+                                        <DimensionsDisplay variant={variant} />
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        <TableRow key={`${product.id}-novariants`} className="hover:bg-accent/20">
+                          <TableCell colSpan={admin ? 6 : 5} className="p-0">
+                            <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-200">
+                              Nenhuma variação cadastrada
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
                     )}
-                  </CollapsibleContent>
-                </Collapsible>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                  </React.Fragment>
+                )))}
+            </TableBody>
+          </Table>
+        </div>
         )}
       </div>
 

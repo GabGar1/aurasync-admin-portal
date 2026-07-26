@@ -71,7 +71,7 @@ export default function Orders() {
   const qc = useQueryClient();
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit, setLimit] = useState(10);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 500);
@@ -166,7 +166,7 @@ export default function Orders() {
   const orders = data?.orders || [];
 
   return (
-    <div className="flex flex-col h-full p-6 space-y-6">
+    <div className="flex flex-col p-6 space-y-6">
       <div className="shrink-0">
         <h1 className="text-2xl font-semibold">Pedidos</h1>
         <p className="text-sm text-muted-foreground">Gerenciamento de pedidos</p>
@@ -217,17 +217,19 @@ export default function Orders() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div>
         {isError ? (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Erro ao carregar pedidos</AlertTitle>
-            <AlertDescription>
-              <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-                Tentar novamente
-              </Button>
-            </AlertDescription>
-          </Alert>
+          <div className="flex items-center justify-center py-16">
+            <Alert variant="destructive" className="w-full max-w-lg">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Erro ao carregar pedidos</AlertTitle>
+              <AlertDescription>
+                <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
+                  Tentar novamente
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
         ) : orders.length === 0 && !isLoading ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <ShoppingCart className="h-12 w-12 mb-4" />
@@ -241,16 +243,16 @@ export default function Orders() {
             ) : null}
           </div>
         ) : (
-          <>
+          <div className="[&>div]:overflow-visible">
             <Table className="table-fixed">
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
-                  <TableHead className="w-[90px]">ID</TableHead>
-                  <TableHead className="min-w-0 w-auto">Cliente</TableHead>
-                  <TableHead className="w-[110px]">Data</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[120px] text-right">Total</TableHead>
-                  <TableHead className="w-[60px] text-center">Ações</TableHead>
+                  <TableHead className="w-[10%]">ID</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead className="w-[16%]">Data</TableHead>
+                  <TableHead className="w-[18%]">Status</TableHead>
+                  <TableHead className="w-[18%] text-right">Total</TableHead>
+                  <TableHead className="w-[9%] text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -321,31 +323,52 @@ export default function Orders() {
                 )}
               </TableBody>
             </Table>
-          </>
+          </div>
         )}
       </div>
 
-      {totalPages > 1 ? (
-        <div className="flex items-center justify-center gap-1 shrink-0">
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <Button
-              key={p}
-              variant={p === page ? 'default' : 'outline'}
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setPage(p)}
+      {data && (
+        <div className="flex items-center justify-between px-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Página {data.page} de {Math.ceil(data.total / data.limit)}
+            </span>
+            <Select
+              value={String(limit)}
+              onValueChange={(value) => { setLimit(Number(value)); setPage(1); }}
             >
-              {p}
+              <SelectTrigger className="w-[70px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[10, 20, 50].map((size) => (
+                  <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Anterior
             </Button>
-          ))}
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= Math.ceil(data.total / data.limit)}
+            >
+              Próximo
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      ) : null}
+      )}
 
       <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
         <SheetContent side="right" className="w-[640px] sm:max-w-[640px] overflow-y-auto">

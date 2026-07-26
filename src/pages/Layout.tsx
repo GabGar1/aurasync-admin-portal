@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { sidebarItems } from "@/components/SidebarItems";
-import { Separator } from "@/components/ui/separator";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,10 +32,11 @@ export default function Layout() {
   const user = getUser();
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <Sidebar>
-        <SidebarHeader className="h-16 border-b flex items-center px-6">
-          <img src="./logo_nome.png" alt="AuraSync" className="h-8" />
+    <SidebarProvider defaultOpen={true} className="h-full">
+      <Sidebar collapsible="icon">
+        <SidebarHeader className="h-16 border-b flex items-center gap-2 px-4">
+          <img src="./logo_nome.png" alt="AuraSync" className="h-8 group-data-[collapsible=icon]:hidden" />
+          <SidebarTrigger />
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
@@ -78,14 +79,7 @@ export default function Layout() {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-8">
-          <SidebarTrigger />
-          <Separator orientation="vertical" className="h-6" />
-          <span className="font-medium text-sm text-muted-foreground">
-            {sidebarItems.find((i) => location.pathname === i.url || location.pathname.startsWith(i.url + "/"))?.title || "AuraSync"}
-          </span>
-        </header>
-        <main className="flex-1 overflow-y-hidden p-6">
+        <main className="flex flex-col flex-1 overflow-y-auto">
           <Outlet />
         </main>
         <Toaster />
