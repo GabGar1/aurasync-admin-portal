@@ -9,25 +9,23 @@ import type {
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3333/api';
 
+axios.defaults.withCredentials = true;
+axios.defaults.withXSRFToken = true;
+axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+axios.defaults.xsrfHeaderName = 'X-CSRF-TOKEN';
+
 const api = axios.create({
   baseURL,
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('aurasync_token');
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-  }
-  return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401 && !error.config?.url?.includes('/login')) {
-      localStorage.removeItem('aurasync_token');
-      localStorage.removeItem('aurasync_user');
+    if (error?.response?.status === 401 && !error.config?.url?.includes('/login') && !error.config?.url?.includes('/auth/')) {
       window.location.href = '/login';
+    }
+    if (error?.response?.status === 403) {
+      window.location.href = '/products';
     }
     return Promise.reject(error);
   }
@@ -35,7 +33,18 @@ api.interceptors.response.use(
 
 export const authApi = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/login', payload);
+    const response = await api.post<LoginResponse>('/auth/login', payload);
+    return response.data;
+  },
+  getMe: async (): Promise<User> => {
+    const response = await api.get<User>('/auth/me');
+    return response.data;
+  },
+  logout: async (): Promise<void> => {
+    await api.post('/auth/logout');
+  },
+  getCsrfToken: async (): Promise<{ csrfToken: string }> => {
+    const response = await api.get<{ csrfToken: string }>('/auth/csrf');
     return response.data;
   },
 };
@@ -49,8 +58,8 @@ export const dashboardApi = {
     const response = await api.get<MarketingResponse>('/dashboard/marketing', { params: { days } });
     return response.data;
   },
-  getStock: async (): Promise<StockResponse> => {
-    const response = await api.get<StockResponse>('/dashboard/stock');
+  getStock: async (days?: number): Promise<StockResponse> => {
+    const response = await api.get<StockResponse>('/dashboard/stock', { params: { days } });
     return response.data;
   },
   getUserStats: async (): Promise<UserStats> => {
@@ -120,8 +129,8 @@ export const ordersApi = {
     await api.delete(`/orders/${id}`);
   },
 
-  syncNuvemshop: async (): Promise<{ success: boolean; processed: number }> => {
-    const response = await api.post('/orders/sync/nuvemshop');
+  syncNuvemshop: async (): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>('/orders/sync/nuvemshop');
     return response.data;
   },
 };
