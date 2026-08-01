@@ -25,7 +25,6 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import DataTablePagination from '@/components/DataTablePagination';
 import CostComponentFormDialog from '@/components/costs/CostComponentFormDialog';
 import SimulateCostDialog from '@/components/costs/SimulateCostDialog';
 import ProductAssociationsDialog from '@/components/costs/ProductAssociationsDialog';

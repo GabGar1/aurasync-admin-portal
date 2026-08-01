@@ -429,7 +429,7 @@ export default function Orders() {
 
                 <section>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">UTMs</h3>
-                  {selectedOrder.utm_source || selectedOrder.utm_medium || selectedOrder.utm_campaign ? (
+                  {selectedOrder.utm_source || selectedOrder.utm_medium || selectedOrder.utm_campaign || selectedOrder.utm_content || selectedOrder.utm_term ? (
                     <div className="space-y-1 text-sm">
                       {selectedOrder.utm_source ? <p>Source: {selectedOrder.utm_source}</p> : null}
                       {selectedOrder.utm_medium ? <p>Medium: {selectedOrder.utm_medium}</p> : null}

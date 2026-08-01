@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, User, CreditCard, Globe, Repeat, AlertTriangle } from 'lucide-react';
+import { CreditCard, Globe, Repeat, AlertTriangle } from 'lucide-react';
 import { customersApi } from '@/services/api';
 import { formatCurrency, formatDate, paymentMethodLabel, statusLabel } from '@/lib/formatters';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -25,7 +25,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
     enabled: open && !!customer,
   });
 
-  const { data: orders, isLoading: ordersLoading } = useQuery({
+  const { data: orders, isLoading: ordersLoading, isError: ordersError } = useQuery({
     queryKey: ['customer-orders', customer?.id],
     queryFn: () => customersApi.getOrders(customer!.id),
     enabled: open && !!customer,
@@ -105,6 +105,11 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
                   <div className="space-y-2">
                     {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
                   </div>
+                ) : ordersError ? (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Erro ao carregar pedidos</AlertTitle>
+                  </Alert>
                 ) : !orders || orders.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">Nenhum pedido encontrado</p>
                 ) : (

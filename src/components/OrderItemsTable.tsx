@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { OrderItem } from "@/types";
 import { formatCurrency, marginPercent, typeLabel } from "@/lib/formatters";

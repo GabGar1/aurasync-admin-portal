@@ -110,7 +110,6 @@ export default function ProductAssociationsDialog({ open, onOpenChange }: Props)
                 setProductName(e.target.value);
                 setSearch(e.target.value);
               }}
-              list="assoc-products-list"
             />
             {productsLoading ? <Skeleton className="h-10 w-full" /> : productsData?.products.length ? (
               <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
