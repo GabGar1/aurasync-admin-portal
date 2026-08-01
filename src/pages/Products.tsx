@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Fragment } from "react";
+import { useState, useMemo, useEffect, useCallback, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi } from "@/services/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -108,10 +108,10 @@ export default function Products() {
     placeholderData: (previousData) => previousData,
   });
 
-  useWebSocket("products_updated", () => {
+  useWebSocket("products_updated", useCallback(() => {
     qc.invalidateQueries({ queryKey: ["products"] });
     toast.success("Estoque atualizado em tempo real!");
-  });
+  }, [qc]));
 
   const syncMutation = useMutation({
     mutationFn: productsApi.syncNuvemshop,

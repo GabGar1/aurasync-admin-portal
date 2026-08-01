@@ -29,14 +29,16 @@ export const useWebSocket = (eventName: WebSocketEvent['event'], onMessageReceiv
         function connect() {
             if (disposedRef.current) return;
 
-            wsRef.current = new WebSocket(WS_URL);
+            const ws = new WebSocket(WS_URL);
+            wsRef.current = ws;
 
-            wsRef.current.onopen = () => {
+            ws.onopen = () => {
+                wsRef.current = ws;
                 retryCountRef.current = 0;
                 clearReconnectTimer();
             };
 
-            wsRef.current.onmessage = (messageEvent) => {
+            ws.onmessage = (messageEvent) => {
                 try {
                     const data: WebSocketEvent = JSON.parse(messageEvent.data);
                     if (data.event === eventName) {
@@ -47,16 +49,16 @@ export const useWebSocket = (eventName: WebSocketEvent['event'], onMessageReceiv
                 }
             };
 
-            wsRef.current.onclose = () => {
-                if (!disposedRef.current && retryCountRef.current < MAX_RETRIES) {
+            ws.onclose = () => {
+                if (wsRef.current === ws && !disposedRef.current && retryCountRef.current < MAX_RETRIES) {
                     const delay = BASE_DELAY * Math.pow(2, retryCountRef.current);
                     retryCountRef.current += 1;
                     reconnectTimeoutRef.current = setTimeout(connect, delay);
                 }
             };
 
-            wsRef.current.onerror = () => {
-                wsRef.current?.close();
+            ws.onerror = () => {
+                ws.close();
             };
         }
 

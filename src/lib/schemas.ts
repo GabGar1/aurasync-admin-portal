@@ -27,11 +27,11 @@ export const externalSaleSchema = z.object({
     variant_id: z.string().min(1, 'Selecione uma variante'),
     quantity: z.preprocess(
       (v) => (v === '' || v === null ? undefined : v),
-      z.number().int().positive('Quantidade deve ser ao menos 1')
+      z.coerce.number({ invalid_type_error: 'Quantidade inválida' }).int('Quantidade inválida').positive('Quantidade deve ser ao menos 1')
     ),
     unit_price: z.preprocess(
       (v) => (v === '' || v === null ? undefined : v),
-      z.number().min(0, 'Preço não pode ser negativo')
+      z.coerce.number({ invalid_type_error: 'Preço inválido' }).min(0, 'Preço não pode ser negativo')
     ),
   })).min(1, 'Adicione ao menos um item'),
   discount_amount: z.coerce.number().min(0).optional(),
