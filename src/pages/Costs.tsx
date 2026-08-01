@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import DataTablePagination from '@/components/DataTablePagination';
 import CostComponentFormDialog from '@/components/costs/CostComponentFormDialog';
+import SimulateCostDialog from '@/components/costs/SimulateCostDialog';
+import ProductAssociationsDialog from '@/components/costs/ProductAssociationsDialog';
 import type { CostComponent, CostComponentPayload } from '@/types';
 
 type ApiError = {
@@ -251,6 +253,9 @@ export default function Costs() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SimulateCostDialog open={simulating !== null} onOpenChange={(open) => { if (!open) setSimulating(null); }} />
+      <ProductAssociationsDialog open={associationsFor !== null} onOpenChange={(open) => { if (!open) setAssociationsFor(null); }} />
     </div>
   );
 }
