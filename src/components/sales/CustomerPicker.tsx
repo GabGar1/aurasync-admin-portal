@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { ChevronsUpDown, Search } from 'lucide-react';
 import { externalSalesApi } from '@/services/api';
 import { useDebounce } from '@/hooks/useDebounce';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -60,7 +59,6 @@ export default function CustomerPicker({ onSelect }: Props) {
                     setOpen(false);
                   }}
                 >
-                  <Check className={cn('mr-2 h-4 w-4 opacity-0')} />
                   <div className="flex-1 min-w-0">
                     <p className="truncate text-sm">{customer.name}</p>
                     <p className="truncate text-xs text-muted-foreground">{customer.email}</p>

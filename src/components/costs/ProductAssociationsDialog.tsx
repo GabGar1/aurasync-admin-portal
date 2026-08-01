@@ -16,17 +16,12 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import type { CostAssociation, CostComponent } from '@/types';
+import type { CostAssociation, CostComponent, ApiError } from '@/types';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-type ApiError = {
-  response?: { data?: { error?: string } };
-  message?: string;
-};
 
 export default function ProductAssociationsDialog({ open, onOpenChange }: Props) {
   const qc = useQueryClient();
@@ -38,7 +33,7 @@ export default function ProductAssociationsDialog({ open, onOpenChange }: Props)
   const [quantity, setQuantity] = useState('1');
 
   const { data: productsData, isLoading: productsLoading } = useQuery({
-    queryKey: ['products', search],
+    queryKey: ['assoc-products', search],
     queryFn: () => productsApi.getAll({ search: search || undefined, limit: 10 }),
     enabled: open,
   });
@@ -184,13 +179,17 @@ export default function ProductAssociationsDialog({ open, onOpenChange }: Props)
                   <div className="grid grid-cols-[1fr_90px] gap-3">
                     <div className="space-y-2">
                       <Label>Componente</Label>
-                      {componentsLoading ? <Skeleton className="h-10 w-full" /> : (
+                      {componentsLoading ? <Skeleton className="h-10 w-full" /> : availableComponents.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Todos os componentes ativos já estão associados a este produto
+                        </p>
+                      ) : (
                         <Select value={componentId} onValueChange={setComponentId}>
                           <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                           <SelectContent>
                             {availableComponents.map((component) => (
                               <SelectItem key={component.id} value={component.id}>
-                                {component.name} ({formatCurrency(component.value)})
+                                {component.name} ({component.type === 'PERCENT' ? `${component.value}%` : formatCurrency(component.value)})
                               </SelectItem>
                             ))}
                           </SelectContent>

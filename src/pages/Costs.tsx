@@ -28,12 +28,6 @@ import {
 import CostComponentFormDialog from '@/components/costs/CostComponentFormDialog';
 import SimulateCostDialog from '@/components/costs/SimulateCostDialog';
 import ProductAssociationsDialog from '@/components/costs/ProductAssociationsDialog';
-import type { CostComponent, CostComponentPayload } from '@/types';
-
-type ApiError = {
-  response?: { data?: { error?: string } };
-  message?: string;
-};
 
 export default function Costs() {
   const { getUser } = useAuth();
@@ -177,7 +171,9 @@ export default function Costs() {
                   </TableCell>
                   <TableCell>{typeLabel(component.type)}</TableCell>
                   <TableCell>{categoryLabel(component.category)}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(component.value)}</TableCell>
+                  <TableCell className="text-right">
+                    {component.type === 'PERCENT' ? `${component.value}%` : formatCurrency(component.value)}
+                  </TableCell>
                   <TableCell>
                     {component.type === 'PERCENT' ? calculationBaseLabel(component.calculation_base) : '-'}
                   </TableCell>

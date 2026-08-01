@@ -56,20 +56,8 @@ export const statusLabels: Record<string, string> = {
   voided: 'Estornado',
 };
 
-const statusColors: Record<string, string> = {
-  open: 'blue',
-  paid: 'green',
-  shipped: 'orange',
-  closed: 'cyan',
-  cancelled: 'red',
-};
-
 export function statusLabel(status: string): string {
   return statusLabels[status] ?? status;
-}
-
-export function statusColor(status: string): string {
-  return statusColors[status] ?? 'default';
 }
 
 const typeLabels: Record<string, string> = {

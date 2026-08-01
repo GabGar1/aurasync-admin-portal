@@ -26,7 +26,7 @@ api.interceptors.response.use(
     if (error?.response?.status === 401 && !error.config?.url?.includes('/login') && !error.config?.url?.includes('/auth/')) {
       window.location.href = '/login';
     }
-    if (error?.response?.status === 403) {
+    if (error?.response?.status === 403 && ['GET', 'HEAD', 'OPTIONS'].includes((error.config?.method ?? '').toUpperCase())) {
       window.location.href = '/products';
     }
     return Promise.reject(error);
@@ -115,11 +115,6 @@ export const productsApi = {
 export const ordersApi = {
   getAll: async (params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<GetOrdersResponse> => {
     const response = await api.get<GetOrdersResponse>('/orders', { params });
-    return response.data;
-  },
-
-  getById: async (id: string): Promise<Order> => {
-    const response = await api.get<Order>(`/orders/${id}`);
     return response.data;
   },
 

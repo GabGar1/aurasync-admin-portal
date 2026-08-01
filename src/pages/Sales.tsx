@@ -6,7 +6,7 @@ import { Loader2, Plus, Trash2, Wallet, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { externalSalesApi } from '@/services/api';
 import { externalSaleSchema, type ExternalSaleFormValues } from '@/lib/schemas';
-import { paymentMethodLabel } from '@/lib/formatters';
+import { paymentMethodLabel, statusLabel } from '@/lib/formatters';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -19,12 +19,7 @@ import {
 import VariantPicker, { type PickedVariant } from '@/components/VariantPicker';
 import CustomerPicker from '@/components/sales/CustomerPicker';
 import SaleResultDialog from '@/components/sales/SaleResultDialog';
-import type { ExternalSaleResult } from '@/types';
-
-type ApiError = {
-  response?: { data?: { error?: string } };
-  message?: string;
-};
+import type { ExternalSaleResult, ApiError } from '@/types';
 
 const paymentMethods = ['credit_card', 'debit_card', 'pix', 'bank_transfer', 'boleto', 'cash'] as const;
 const saleStatuses = ['PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED'] as const;
@@ -200,6 +195,9 @@ export default function Sales() {
                     placeholder="0,00"
                     {...form.register(`items.${index}.unit_price`)}
                   />
+                  {form.formState.errors.items?.[index]?.unit_price ? (
+                    <p className="text-sm text-destructive">{form.formState.errors.items[index].unit_price.message}</p>
+                  ) : null}
                 </div>
                 <div className="w-24">
                   <Label>Qtd</Label>
@@ -208,6 +206,9 @@ export default function Sales() {
                     min="1"
                     {...form.register(`items.${index}.quantity`)}
                   />
+                  {form.formState.errors.items?.[index]?.quantity ? (
+                    <p className="text-sm text-destructive">{form.formState.errors.items[index].quantity.message}</p>
+                  ) : null}
                 </div>
                 <Button
                   type="button"
@@ -261,7 +262,7 @@ export default function Sales() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {saleStatuses.map((status) => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                    <SelectItem key={status} value={status}>{statusLabel(status)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

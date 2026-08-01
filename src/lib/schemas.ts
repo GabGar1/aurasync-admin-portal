@@ -25,8 +25,14 @@ export const externalSaleSchema = z.object({
   customer_email: z.string().email('Email inválido').optional().or(z.literal('')),
   items: z.array(z.object({
     variant_id: z.string().min(1, 'Selecione uma variante'),
-    quantity: z.coerce.number().int().positive('Quantidade deve ser ao menos 1'),
-    unit_price: z.coerce.number().min(0, 'Preço não pode ser negativo'),
+    quantity: z.preprocess(
+      (v) => (v === '' || v === null ? undefined : v),
+      z.number().int().positive('Quantidade deve ser ao menos 1')
+    ),
+    unit_price: z.preprocess(
+      (v) => (v === '' || v === null ? undefined : v),
+      z.number().min(0, 'Preço não pode ser negativo')
+    ),
   })).min(1, 'Adicione ao menos um item'),
   discount_amount: z.coerce.number().min(0).optional(),
   payment_method: z.string().optional(),

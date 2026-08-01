@@ -20,11 +20,13 @@ export default function OrderFinancialSummary({ order }: Props) {
       ) : null}
       <div className="flex justify-between">
         <span className="text-muted-foreground">Custo total</span>
-        <span>{formatCurrency(order.total_cost)}</span>
+        <span>{order.total_cost === null || order.total_cost === undefined ? '-' : formatCurrency(order.total_cost)}</span>
       </div>
       <div className="flex justify-between">
         <span className="text-muted-foreground">Lucro total</span>
-        <span className="font-semibold text-green-700">{formatCurrency(order.total_profit)}</span>
+        <span className="font-semibold text-green-700">
+          {order.total_profit === null || order.total_profit === undefined ? '-' : formatCurrency(order.total_profit)}
+        </span>
       </div>
       <div className="flex justify-between">
         <span className="text-muted-foreground">Margem</span>

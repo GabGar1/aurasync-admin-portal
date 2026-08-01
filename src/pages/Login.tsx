@@ -14,8 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { AxiosError } from "axios";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().email("Informe um email válido"),
+  password: z.string().min(1, "A senha é obrigatória"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -32,7 +32,7 @@ export default function Login() {
   const mutation = useMutation({
     mutationFn: (payload: LoginForm) => authApi.login(payload),
     onSuccess: (data) => {
-      toast.success("Welcome back!");
+      toast.success("Bem-vindo de volta!");
       login(data.token, data.user);
       navigate("/");
     },
@@ -40,15 +40,15 @@ export default function Login() {
       form.clearErrors("root");
       if (error instanceof AxiosError) {
         if (error.response?.status === 401) {
-          const message = (error.response.data as { error?: string })?.error || "Invalid email or password";
+          const message = (error.response.data as { error?: string })?.error || "Email ou senha inválidos";
           form.setError("root", { message });
         } else if (!error.response) {
-          form.setError("root", { message: "Connection error. Please check your internet." });
+          form.setError("root", { message: "Erro de conexão. Verifique sua internet." });
         } else {
-          form.setError("root", { message: "An unexpected error occurred. Please try again." });
+          form.setError("root", { message: "Ocorreu um erro inesperado. Tente novamente." });
         }
       } else {
-        form.setError("root", { message: "An unexpected error occurred. Please try again." });
+        form.setError("root", { message: "Ocorreu um erro inesperado. Tente novamente." });
       }
     },
   });
@@ -62,7 +62,7 @@ export default function Login() {
       <Card className="w-full max-w-md border-t-4 border-t-primary">
         <div className="text-center mt-6 mb-2">
           <h1 className="text-2xl font-bold" style={{ color: "#9966CC" }}>AuraSync</h1>
-          <p className="text-sm text-muted-foreground">E-commerce Management System</p>
+          <p className="text-sm text-muted-foreground">Sistema de gerenciamento de e-commerce</p>
         </div>
         <CardContent>
           <Form {...form}>
@@ -93,13 +93,13 @@ export default function Login() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Senha</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           type="password"
-                          placeholder="Password"
+                          placeholder="Senha"
                           className="pl-10"
                           {...field}
                         />
@@ -115,7 +115,7 @@ export default function Login() {
                 </p>
               )}
               <Button type="submit" className="w-full" size="lg" disabled={mutation.isPending}>
-                {mutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Entrando...</> : "Sign In"}
+                {mutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Entrando...</> : "Entrar"}
               </Button>
             </form>
           </Form>

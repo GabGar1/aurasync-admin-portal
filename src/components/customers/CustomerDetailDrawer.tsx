@@ -25,7 +25,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
     enabled: open && !!customer,
   });
 
-  const { data: orders, isLoading: ordersLoading, isError: ordersError } = useQuery({
+  const { data: orders, isLoading: ordersLoading, isError: ordersError, refetch: refetchOrders } = useQuery({
     queryKey: ['customer-orders', customer?.id],
     queryFn: () => customersApi.getOrders(customer!.id),
     enabled: open && !!customer,
@@ -109,6 +109,9 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Erro ao carregar pedidos</AlertTitle>
+                    <AlertDescription>
+                      <Button variant="outline" size="sm" onClick={() => refetchOrders()} className="mt-2">Tentar novamente</Button>
+                    </AlertDescription>
                   </Alert>
                 ) : !orders || orders.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">Nenhum pedido encontrado</p>

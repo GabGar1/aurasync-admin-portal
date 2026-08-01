@@ -34,7 +34,7 @@ export default function VariantPicker({ value, onSelect, placeholder = 'Buscar p
   const debouncedSearch = useDebounce(search, 400);
 
   const { data } = useQuery({
-    queryKey: ['products', debouncedSearch],
+    queryKey: ['variant-picker', debouncedSearch],
     queryFn: () => productsApi.getAll({ search: debouncedSearch || undefined, limit: 10 }),
     enabled: open,
     placeholderData: (previousData) => previousData,

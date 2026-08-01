@@ -6,20 +6,34 @@ type WebSocketEvent = {
     message: string;
 };
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'wss://localhost:3333';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3333';
 const MAX_RETRIES = 10;
 const BASE_DELAY = 1000;
 
 export const useWebSocket = (eventName: WebSocketEvent['event'], onMessageReceived: () => void) => {
     const retryCountRef = useRef(0);
     const wsRef = useRef<WebSocket | null>(null);
+    const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const disposedRef = useRef(false);
 
     useEffect(() => {
+        disposedRef.current = false;
+
+        function clearReconnectTimer() {
+            if (reconnectTimeoutRef.current !== null) {
+                clearTimeout(reconnectTimeoutRef.current);
+                reconnectTimeoutRef.current = null;
+            }
+        }
+
         function connect() {
+            if (disposedRef.current) return;
+
             wsRef.current = new WebSocket(WS_URL);
 
             wsRef.current.onopen = () => {
                 retryCountRef.current = 0;
+                clearReconnectTimer();
             };
 
             wsRef.current.onmessage = (messageEvent) => {
@@ -34,10 +48,10 @@ export const useWebSocket = (eventName: WebSocketEvent['event'], onMessageReceiv
             };
 
             wsRef.current.onclose = () => {
-                if (retryCountRef.current < MAX_RETRIES) {
+                if (!disposedRef.current && retryCountRef.current < MAX_RETRIES) {
                     const delay = BASE_DELAY * Math.pow(2, retryCountRef.current);
                     retryCountRef.current += 1;
-                    setTimeout(connect, delay);
+                    reconnectTimeoutRef.current = setTimeout(connect, delay);
                 }
             };
 
@@ -49,6 +63,8 @@ export const useWebSocket = (eventName: WebSocketEvent['event'], onMessageReceiv
         connect();
 
         return () => {
+            disposedRef.current = true;
+            clearReconnectTimer();
             wsRef.current?.close();
         };
     }, [eventName, onMessageReceived]);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Loader2, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,17 +12,12 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import VariantPicker, { type PickedVariant } from '@/components/VariantPicker';
-import type { CostSimulateResponse } from '@/types';
+import type { CostSimulateResponse, ApiError } from '@/types';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-type ApiError = {
-  response?: { data?: { error?: string } };
-  message?: string;
-};
 
 export default function SimulateCostDialog({ open, onOpenChange }: Props) {
   const [variant, setVariant] = useState<PickedVariant | null>(null);
@@ -37,6 +32,15 @@ export default function SimulateCostDialog({ open, onOpenChange }: Props) {
     }),
     onError: (err: ApiError) => toast.error(`Falha ao simular: ${err?.response?.data?.error || err?.message}`),
   });
+
+  useEffect(() => {
+    if (!open) {
+      setVariant(null);
+      setUnitPrice('');
+      setQuantity('1');
+      simulateMutation.reset();
+    }
+  }, [open, simulateMutation]);
 
   const result: CostSimulateResponse | undefined = simulateMutation.data;
 

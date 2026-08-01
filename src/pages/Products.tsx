@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { isAdmin } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
 import { toast } from "sonner";
-import type { Product, ProductVariant } from "@/types";
+import type { Product, ProductVariant, ApiError } from "@/types";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -23,11 +23,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Package, Search, ChevronDown, ChevronLeft, ChevronRight, Plus, RefreshCw, AlertTriangle, Trash2 } from "lucide-react";
 import CreateProductModal from "@/components/CreateProductModal";
-
-type ApiError = {
-  response?: { data?: { error?: string } };
-  message?: string;
-};
 
 function StockIndicator({ quantity }: { quantity: number }) {
   if (quantity > 10) {

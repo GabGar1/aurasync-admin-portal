@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Search, RefreshCw, ShoppingCart, MoreHorizontal, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '@/services/api';
@@ -9,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
 import { formatCurrency, formatDate, statusLabel, preferLabel, sourceLabel, storefrontLabel, paymentMethodLabel } from '@/lib/formatters';
 import { toast } from 'sonner';
-import type { Order, GetOrdersResponse } from '@/types';
+import type { Order, GetOrdersResponse, ApiError } from '@/types';
 import type { UseMutationResult } from '@tanstack/react-query';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,19 +31,6 @@ import OrderFinancialSummary from '@/components/OrderFinancialSummary';
 import OrderShippingInfo from '@/components/OrderShippingInfo';
 import OrderCustomerInfo from '@/components/OrderCustomerInfo';
 import OrderItemsTable from '@/components/OrderItemsTable';
-
-type ApiError = {
-  response?: { data?: { error?: string } };
-  message?: string;
-};
-
-const statusBadgeVariant: Record<string, string> = {
-  open: 'secondary',
-  paid: 'default',
-  shipped: 'default',
-  closed: 'default',
-  cancelled: 'destructive',
-};
 
 const statusBadgeClass: Record<string, string> = {
   open: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
@@ -71,7 +57,6 @@ export default function Orders() {
   const { getUser } = useAuth();
   const currentUser = getUser();
   const admin = isAdmin(currentUser?.role);
-  const navigate = useNavigate();
   const qc = useQueryClient();
 
   const [page, setPage] = useState(1);
