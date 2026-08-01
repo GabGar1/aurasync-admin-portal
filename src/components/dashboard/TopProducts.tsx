@@ -25,26 +25,28 @@ export default function TopProducts({ data, isLoading }: TopProductsProps) {
         ) : !data || data.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">Nenhum dado disponível</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead>Variante</TableHead>
-                <TableHead className="text-right">Vendidos</TableHead>
-                <TableHead className="text-right">Receita</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((item) => (
-                <TableRow key={item.product_id}>
-                  <TableCell className="font-medium">{item.product_name}</TableCell>
-                  <TableCell>{item.variant_name || '-'}</TableCell>
-                  <TableCell className="text-right">{item.total_sold}</TableCell>
-                  <TableCell className="text-right font-medium">{formatCurrency(item.revenue)}</TableCell>
+          <div className="max-h-[300px] overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Variante</TableHead>
+                  <TableHead className="text-right">Vendidos</TableHead>
+                  <TableHead className="text-right">Receita</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.map((item) => (
+                  <TableRow key={item.product_id}>
+                    <TableCell className="font-medium">{item.product_name}</TableCell>
+                    <TableCell>{item.variant_name || '-'}</TableCell>
+                    <TableCell className="text-right">{item.total_sold}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(item.revenue)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

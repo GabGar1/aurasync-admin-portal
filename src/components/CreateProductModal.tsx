@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 import { productsApi } from "@/services/api";
 import type { CreateProductPayload } from "@/types";
 import { toast } from "sonner";
@@ -227,7 +228,7 @@ export default function CreateProductModal({ open, onClose, onSuccess }: Props) 
 
           <div className="flex gap-2 pt-4">
             <Button type="submit" disabled={loading}>
-              {loading ? "Salvando..." : "Salvar Produto"}
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : "Salvar Produto"}
             </Button>
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancelar

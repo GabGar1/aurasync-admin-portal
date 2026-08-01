@@ -62,26 +62,28 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
           <CardHeader><CardTitle>Campanhas</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.by_campaign?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Campanha</TableHead>
-                    <TableHead className="text-right">Pedidos</TableHead>
-                    <TableHead className="text-right">Receita</TableHead>
-                    <TableHead className="text-right">AOV</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.by_campaign.map((camp, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{camp.campaign || 'N/A'}</TableCell>
-                      <TableCell className="text-right">{camp.orders}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(camp.revenue)}</TableCell>
-                      <TableCell className={`text-right font-medium ${camp.aov > overallAOV ? 'text-green-600' : ''}`}>{formatCurrency(camp.aov)}</TableCell>
+              <div className="max-h-[300px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Campanha</TableHead>
+                      <TableHead className="text-right">Pedidos</TableHead>
+                      <TableHead className="text-right">Receita</TableHead>
+                      <TableHead className="text-right">AOV</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {data.by_campaign.map((camp, i) => (
+                      <TableRow key={i}>
+                        <TableCell>{camp.campaign || 'N/A'}</TableCell>
+                        <TableCell className="text-right">{camp.orders}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(camp.revenue)}</TableCell>
+                        <TableCell className={`text-right font-medium ${camp.aov > overallAOV ? 'text-green-600' : ''}`}>{formatCurrency(camp.aov)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -91,26 +93,28 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
           <CardHeader><CardTitle>Origens (UTM)</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.by_source?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fonte</TableHead>
-                    <TableHead>Mídia</TableHead>
-                    <TableHead className="text-right">Pedidos</TableHead>
-                    <TableHead className="text-right">Receita</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[...data.by_source].sort((a, b) => b.revenue - a.revenue).map((src, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{src.source || 'N/A'}</TableCell>
-                      <TableCell>{src.medium || 'N/A'}</TableCell>
-                      <TableCell className="text-right">{src.orders}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(src.revenue)}</TableCell>
+              <div className="max-h-[300px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fonte</TableHead>
+                      <TableHead>Mídia</TableHead>
+                      <TableHead className="text-right">Pedidos</TableHead>
+                      <TableHead className="text-right">Receita</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {[...data.by_source].sort((a, b) => b.revenue - a.revenue).map((src, i) => (
+                      <TableRow key={i}>
+                        <TableCell>{src.source || 'N/A'}</TableCell>
+                        <TableCell>{src.medium || 'N/A'}</TableCell>
+                        <TableCell className="text-right">{src.orders}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(src.revenue)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -120,24 +124,26 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
           <CardHeader><CardTitle>Vendas por Província</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.by_province?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Província</TableHead>
-                    <TableHead className="text-right">Pedidos</TableHead>
-                    <TableHead className="text-right">Receita</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[...data.by_province].sort((a, b) => b.orders - a.orders).map((prov, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">{prov.province || 'N/A'}</TableCell>
-                      <TableCell className="text-right">{prov.orders}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(prov.revenue)}</TableCell>
+              <div className="max-h-[300px] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Província</TableHead>
+                      <TableHead className="text-right">Pedidos</TableHead>
+                      <TableHead className="text-right">Receita</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {[...data.by_province].sort((a, b) => b.orders - a.orders).map((prov, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="font-medium">{prov.province || 'N/A'}</TableCell>
+                        <TableCell className="text-right">{prov.orders}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(prov.revenue)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

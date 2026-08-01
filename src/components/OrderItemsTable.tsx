@@ -1,4 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import type { OrderItem } from "@/types";
 import { formatCurrency } from "@/lib/formatters";
 
@@ -20,6 +21,7 @@ export default function OrderItemsTable({ items }: Props) {
           <TableHead className="text-right">Preço Unit.</TableHead>
           <TableHead className="text-right">Custo Unit.</TableHead>
           <TableHead className="text-right">Subtotal</TableHead>
+          <TableHead className="w-[80px] text-center">Promo</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -30,6 +32,15 @@ export default function OrderItemsTable({ items }: Props) {
             <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
             <TableCell className="text-right">{formatCurrency(item.unit_cost)}</TableCell>
             <TableCell className="text-right font-medium">{formatCurrency(item.quantity * item.unit_price)}</TableCell>
+            <TableCell className="text-center">
+              {item.has_promotional_price ? (
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                  Promo
+                </Badge>
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              )}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

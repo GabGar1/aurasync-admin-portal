@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Plus, AlertTriangle, Database, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, AlertTriangle, Database, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '@/services/api';
-import type { CreateInventoryPayload, GetInventoryResponse } from '@/types';
+import type { CreateInventoryPayload, GetInventoryResponse, ApiError } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
 import { formatDate } from '@/lib/formatters';
@@ -47,7 +47,7 @@ export default function Inventory() {
       qc.invalidateQueries({ queryKey: ['inventory'] });
       setDialogOpen(false);
     },
-    onError: (err: any) => toast.error(
+    onError: (err: ApiError) => toast.error(
       `Falha ao registrar: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`
     ),
   });
@@ -56,30 +56,34 @@ export default function Inventory() {
   const transactions = data?.transactions || [];
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Inventário</h1>
-          <p className="text-sm text-muted-foreground">Histórico de transações de inventário</p>
+    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
+      <div className="shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Inventário</h1>
+            <p className="text-sm text-muted-foreground">Histórico de transações de inventário</p>
+          </div>
+          {admin && (
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Ajuste Manual
+            </Button>
+          )}
         </div>
-        {admin && (
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Ajuste Manual
-          </Button>
-        )}
       </div>
 
       {isError ? (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erro ao carregar transações</AlertTitle>
-          <AlertDescription>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-              Tentar novamente
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <div className="flex items-center justify-center py-16">
+          <Alert variant="destructive" className="w-full max-w-lg">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar transações</AlertTitle>
+            <AlertDescription>
+              <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
       ) : transactions.length === 0 && !isLoading ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Database className="h-12 w-12 mb-4" />
@@ -89,7 +93,7 @@ export default function Inventory() {
       ) : (
         <>
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Variant ID</TableHead>
@@ -249,7 +253,7 @@ function CreateInventoryForm({ onSubmit, isPending }: { onSubmit: (payload: Crea
       </div>
       <DialogFooter>
         <Button type="submit" disabled={isPending || !variantId.trim() || !type || quantity === ''}>
-          {isPending ? 'Registrando...' : 'Registrar'}
+          {isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Registrando...</> : 'Registrar'}
         </Button>
       </DialogFooter>
     </form>

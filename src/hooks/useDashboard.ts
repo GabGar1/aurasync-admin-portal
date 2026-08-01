@@ -26,8 +26,8 @@ export function useDashboard() {
   });
 
   const stock = useQuery({
-    queryKey: ['dashboard-stock', refetchKey],
-    queryFn: () => dashboardApi.getStock(),
+    queryKey: ['dashboard-stock', days, refetchKey],
+    queryFn: () => dashboardApi.getStock(days),
     refetchInterval: 60000,
     placeholderData: (prev) => prev,
   });

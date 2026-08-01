@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, RefreshCw, Plus, ShoppingCart, MoreHorizontal, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, RefreshCw, Plus, ShoppingCart, MoreHorizontal, AlertTriangle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '@/services/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
 import { formatCurrency, formatDate, statusLabel } from '@/lib/formatters';
@@ -39,29 +40,33 @@ type ApiError = {
 };
 
 const statusBadgeVariant: Record<string, string> = {
-  PENDING: 'secondary',
-  PAID: 'default',
-  SHIPPED: 'default',
-  CANCELED: 'destructive',
+  open: 'secondary',
+  paid: 'default',
+  shipped: 'default',
+  closed: 'default',
+  cancelled: 'destructive',
 };
 
 const statusBadgeClass: Record<string, string> = {
-  PENDING: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
-  PAID: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
-  SHIPPED: 'bg-orange-100 text-orange-800 hover:bg-orange-100 border-transparent',
-  CANCELED: '',
+  open: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
+  paid: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
+  shipped: 'bg-orange-100 text-orange-800 hover:bg-orange-100 border-transparent',
+  closed: 'bg-cyan-100 text-cyan-800 hover:bg-cyan-100 border-transparent',
+  cancelled: '',
 };
 
-const orderStatuses = ['PENDING', 'PAID', 'SHIPPED', 'CANCELED'] as const;
+const paymentBadgeClass: Record<string, string> = {
+  paid: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
+  pending: 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent',
+  overdue: 'bg-red-100 text-red-800 hover:bg-red-100 border-transparent',
+  refunded: 'bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent',
+  partially_refunded: 'bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent',
+  partially_paid: 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent',
+  disputed: 'bg-red-100 text-red-800 hover:bg-red-100 border-transparent',
+  under_review: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
+};
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
-}
+const orderStatuses = ['open', 'paid', 'shipped', 'closed', 'cancelled'] as const;
 
 export default function Orders() {
   const { getUser } = useAuth();
@@ -135,8 +140,8 @@ export default function Orders() {
 
   const syncMutation = useMutation({
     mutationFn: ordersApi.syncNuvemshop,
-    onSuccess: (res) => {
-      toast.success(`Sincronização concluída! ${res.processed || 0} pedidos atualizados.`);
+    onSuccess: () => {
+      toast.success('Sincronização de pedidos iniciada em segundo plano. A lista será atualizada automaticamente.');
       qc.invalidateQueries({ queryKey: ['orders'] });
     },
     onError: (err: ApiError) => toast.error(
@@ -166,7 +171,7 @@ export default function Orders() {
   const orders = data?.orders || [];
 
   return (
-    <div className="flex flex-col p-6 space-y-6">
+    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
       <div className="shrink-0">
         <h1 className="text-2xl font-semibold">Pedidos</h1>
         <p className="text-sm text-muted-foreground">Gerenciamento de pedidos</p>
@@ -191,10 +196,11 @@ export default function Orders() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="PENDING">Pendente</SelectItem>
-            <SelectItem value="PAID">Pago</SelectItem>
-            <SelectItem value="SHIPPED">Enviado</SelectItem>
-            <SelectItem value="CANCELED">Cancelado</SelectItem>
+            <SelectItem value="open">Ativo</SelectItem>
+            <SelectItem value="paid">Pago</SelectItem>
+            <SelectItem value="shipped">Enviado</SelectItem>
+            <SelectItem value="closed">Arquivado</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -280,7 +286,7 @@ export default function Orders() {
 </TableCell>
                       <TableCell>{formatDate(order.created_at)}</TableCell>
                       <TableCell>
-                        <Badge className={statusBadgeClass[order.status] || ''} variant={order.status === 'CANCELED' ? 'destructive' : 'default'}>
+                        <Badge className={statusBadgeClass[order.status] || ''} variant={order.status === 'cancelled' ? 'destructive' : 'default'}>
                           {statusLabel(order.status)}
                         </Badge>
                       </TableCell>
@@ -295,21 +301,21 @@ export default function Orders() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                disabled={order.status === 'PAID'}
-                                onClick={() => updateMutation.mutate({ id: order.id, status: 'PAID' })}
+                                disabled={order.status === 'paid'}
+                                onClick={() => updateMutation.mutate({ id: order.id, status: 'paid' })}
                               >
                                 Marcar como Pago
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                disabled={order.status === 'SHIPPED'}
-                                onClick={() => updateMutation.mutate({ id: order.id, status: 'SHIPPED' })}
+                                disabled={order.status === 'shipped'}
+                                onClick={() => updateMutation.mutate({ id: order.id, status: 'shipped' })}
                               >
                                 Marcar como Enviado
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive"
-                                disabled={order.status === 'CANCELED'}
+                                disabled={order.status === 'cancelled'}
                                 onClick={() => handleCancelClick(order.id)}
                               >
                                 Cancelar Pedido
@@ -377,7 +383,7 @@ export default function Orders() {
               <SheetHeader>
                 <SheetTitle>Pedido #{selectedOrder.id.slice(0, 8)}</SheetTitle>
                 <SheetDescription>
-                  <Badge className={statusBadgeClass[selectedOrder.status] || ''} variant={selectedOrder.status === 'CANCELED' ? 'destructive' : 'default'}>
+                  <Badge className={statusBadgeClass[selectedOrder.status] || ''} variant={selectedOrder.status === 'cancelled' ? 'destructive' : 'default'}>
                     {statusLabel(selectedOrder.status)}
                   </Badge>
                 </SheetDescription>
@@ -387,6 +393,26 @@ export default function Orders() {
                 <section>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cliente</h3>
                   <OrderCustomerInfo customer_name={selectedOrder.customer_name} />
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pagamento</h3>
+                  {selectedOrder.payment_status ? (
+                    <Badge className={paymentBadgeClass[selectedOrder.payment_status] || ''} variant="default">
+                      {selectedOrder.payment_status.replace(/_/g, ' ')}
+                    </Badge>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">N/A</p>
+                  )}
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Atendimento</h3>
+                  {selectedOrder.fulfillment_status ? (
+                    <Badge variant="secondary">{selectedOrder.fulfillment_status}</Badge>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">N/A</p>
+                  )}
                 </section>
 
                 <section>
@@ -404,7 +430,7 @@ export default function Orders() {
 
                 <section>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Frete</h3>
-                  <OrderShippingInfo />
+                  <OrderShippingInfo has_free_shipping={selectedOrder.has_free_shipping} />
                 </section>
 
                 <section>
@@ -433,7 +459,7 @@ export default function Orders() {
                     </Select>
                     <Button
                       variant="destructive"
-                      disabled={selectedOrder.status === 'CANCELED'}
+                      disabled={selectedOrder.status === 'cancelled'}
                       onClick={() => handleCancelClick(selectedOrder.id)}
                     >
                       Cancelar
@@ -482,7 +508,7 @@ export default function Orders() {
 
 function CreateOrderForm({ onSubmit, isPending }: { onSubmit: (payload: CreateOrderPayload) => void; isPending: boolean }) {
   const [customerName, setCustomerName] = useState('');
-  const [status, setStatus] = useState<string>('PENDING');
+  const [status, setStatus] = useState<string>('open');
   const [items, setItems] = useState<Array<{ variant_id: string; quantity: string; unit_price: string; unit_cost: string }>>([]);
 
   function addItem() {
@@ -603,7 +629,7 @@ function CreateOrderForm({ onSubmit, isPending }: { onSubmit: (payload: CreateOr
 
       <div className="flex gap-2 pt-4">
         <Button type="submit" disabled={isPending || !customerName.trim()}>
-          {isPending ? 'Criando...' : 'Criar Pedido'}
+          {isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Criando...</> : 'Criar Pedido'}
         </Button>
       </div>
     </form>

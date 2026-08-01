@@ -40,19 +40,19 @@ export function paymentMethodLabel(method: string | null | undefined): string {
 }
 
 export const statusLabels: Record<string, string> = {
-  PENDING: 'Pendente',
-  PAID: 'Pago',
-  SHIPPED: 'Enviado',
-  DELIVERED: 'Entregue',
-  CANCELED: 'Cancelado',
+  open: 'Ativo',
+  paid: 'Pago',
+  shipped: 'Enviado',
+  closed: 'Arquivado',
+  cancelled: 'Cancelado',
 };
 
 const statusColors: Record<string, string> = {
-  PENDING: 'blue',
-  PAID: 'green',
-  SHIPPED: 'orange',
-  DELIVERED: 'cyan',
-  CANCELED: 'red',
+  open: 'blue',
+  paid: 'green',
+  shipped: 'orange',
+  closed: 'cyan',
+  cancelled: 'red',
 };
 
 export function statusLabel(status: string): string {

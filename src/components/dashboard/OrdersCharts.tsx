@@ -10,11 +10,11 @@ interface OrdersChartsProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  PAID: '#3b82f6',
-  PENDING: '#f59e0b',
-  SHIPPED: '#06b6d4',
-  DELIVERED: '#22c55e',
-  CANCELED: '#ef4444',
+  open: '#3b82f6',
+  paid: '#f59e0b',
+  shipped: '#06b6d4',
+  closed: '#22c55e',
+  cancelled: '#ef4444',
 };
 
 export default function OrdersCharts({ byHour, byStatus, isLoading }: OrdersChartsProps) {

@@ -36,7 +36,7 @@ export default function Layout() {
       <Sidebar collapsible="icon">
         <SidebarHeader className="h-16 border-b flex items-center gap-2 px-4">
           <img src="./logo_nome.png" alt="AuraSync" className="h-8 group-data-[collapsible=icon]:hidden" />
-          <SidebarTrigger />
+          <SidebarTrigger className="ml-auto" />
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
@@ -58,7 +58,7 @@ export default function Layout() {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t p-4">
+        <SidebarFooter className="border-t p-4 group-data-[collapsible=icon]:border-t-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md hover:bg-sidebar-accent transition-colors text-sm">

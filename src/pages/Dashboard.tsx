@@ -16,7 +16,7 @@ export default function Dashboard() {
   const isLoadingUsers = userStats.isLoading && !userStats.data;
 
   return (
-    <div className="flex flex-col p-6 space-y-6">
+    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
       <div className="flex items-center justify-between shrink-0">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <div className="flex items-center gap-2">

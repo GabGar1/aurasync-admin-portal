@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Search, Plus, MoreHorizontal, AlertTriangle, UsersIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { Search, Plus, MoreHorizontal, AlertTriangle, UsersIcon, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '@/services/api';
-import type { User, CreateUserPayload, UpdateUserPayload, GetUsersResponse } from '@/types';
+import type { User, CreateUserPayload, UpdateUserPayload, GetUsersResponse, ApiError } from '@/types';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
 import { formatDate } from '@/lib/formatters';
@@ -19,15 +20,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
-}
 
 function RoleBadge({ role }: { role: string }) {
   if (role === 'ADMIN') {
@@ -55,7 +47,7 @@ export default function Users() {
   const qc = useQueryClient();
 
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const debouncedSearch = useDebounce(search, 500);
@@ -84,7 +76,7 @@ export default function Users() {
       qc.invalidateQueries({ queryKey: ['users'] });
       setCreateDialogOpen(false);
     },
-    onError: (err: any) => toast.error(
+    onError: (err: ApiError) => toast.error(
       `Falha ao criar: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`
     ),
   });
@@ -98,7 +90,7 @@ export default function Users() {
       setEditDialogOpen(false);
       setEditingUser(null);
     },
-    onError: (err: any) => toast.error(
+    onError: (err: ApiError) => toast.error(
       `Falha ao atualizar: ${err?.response?.data?.error || err?.message}`
     ),
   });
@@ -111,7 +103,7 @@ export default function Users() {
       setDeleteDialogOpen(false);
       setDeletingUser(null);
     },
-    onError: (err: any) => toast.error(
+    onError: (err: ApiError) => toast.error(
       `Falha ao remover: ${err?.response?.data?.error || err?.message}`
     ),
   });
@@ -136,18 +128,20 @@ export default function Users() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Usuários</h1>
-          <p className="text-sm text-muted-foreground">Gerenciamento de usuários do sistema</p>
+    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
+      <div className="shrink-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Usuários</h1>
+            <p className="text-sm text-muted-foreground">Gerenciamento de usuários do sistema</p>
+          </div>
+          {admin && (
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Novo Usuário
+            </Button>
+          )}
         </div>
-        {admin && (
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Novo Usuário
-          </Button>
-        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -165,10 +159,10 @@ export default function Users() {
           onValueChange={(value) => { setRoleFilter(value); setPage(1); }}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtrar por Role" />
+            <SelectValue placeholder="Filtrar por Função" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os Roles</SelectItem>
+            <SelectItem value="all">Todas as Funções</SelectItem>
             <SelectItem value="ADMIN">ADMIN</SelectItem>
             <SelectItem value="EMPLOYEE">EMPLOYEE</SelectItem>
             <SelectItem value="SUPER_ADMIN">SUPER_ADMIN</SelectItem>
@@ -177,15 +171,17 @@ export default function Users() {
       </div>
 
       {isError ? (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erro ao carregar usuários</AlertTitle>
-          <AlertDescription>
-            <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-              Tentar novamente
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <div className="flex items-center justify-center py-16">
+          <Alert variant="destructive" className="w-full max-w-lg">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar usuários</AlertTitle>
+            <AlertDescription>
+              <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
       ) : users.length === 0 && !isLoading ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <UsersIcon className="h-12 w-12 mb-4" />
@@ -200,8 +196,8 @@ export default function Users() {
         </div>
       ) : (
         <>
-          <Table>
-            <TableHeader>
+          <Table className="table-fixed">
+            <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Role</TableHead>
@@ -266,27 +262,48 @@ export default function Users() {
             </TableBody>
           </Table>
 
-          {totalPages > 1 ? (
-            <div className="flex items-center justify-center gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <Button
-                  key={p}
-                  variant={p === page ? 'default' : 'outline'}
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setPage(p)}
+          {data && (
+            <div className="flex items-center justify-between px-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Página {data.page} de {Math.ceil(data.total / data.limit)}
+                </span>
+                <Select
+                  value={String(limit)}
+                  onValueChange={(value) => { setLimit(Number(value)); setPage(1); }}
                 >
-                  {p}
+                  <SelectTrigger className="w-[70px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[10, 20, 50].map((size) => (
+                      <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
                 </Button>
-              ))}
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= Math.ceil(data.total / data.limit)}
+                >
+                  Próximo
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          ) : null}
+          )}
         </>
       )}
 
@@ -403,7 +420,7 @@ function CreateUserForm({ onSubmit, isPending }: { onSubmit: (payload: CreateUse
       </div>
       <DialogFooter>
         <Button type="submit" disabled={isPending || !email.trim() || !password || !firstName.trim() || !lastName.trim()}>
-          {isPending ? 'Criando...' : 'Criar'}
+          {isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Criando...</> : 'Criar'}
         </Button>
       </DialogFooter>
     </form>
@@ -454,14 +471,14 @@ function EditUserForm({ user, onSubmit, isPending }: { user: User; onSubmit: (pa
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="active">active</SelectItem>
-            <SelectItem value="inactive">inactive</SelectItem>
+            <SelectItem value="active">Ativo</SelectItem>
+            <SelectItem value="inactive">Inativo</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <DialogFooter>
         <Button type="submit" disabled={isPending || !firstName.trim() || !lastName.trim()}>
-          {isPending ? 'Salvando...' : 'Salvar'}
+          {isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : 'Salvar'}
         </Button>
       </DialogFooter>
     </form>

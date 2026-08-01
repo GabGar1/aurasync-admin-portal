@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi } from "@/services/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useAuth } from "@/hooks/useAuth";
 import { isAdmin } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
@@ -12,7 +13,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import {
@@ -28,15 +28,6 @@ type ApiError = {
   response?: { data?: { error?: string } };
   message?: string;
 };
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
-}
 
 function StockIndicator({ quantity }: { quantity: number }) {
   if (quantity > 10) {
@@ -191,41 +182,37 @@ export default function Products() {
   const hasFilters = debouncedSearch || category !== "all";
 
   return (
-    <div className="flex flex-col p-6 space-y-6">
+    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
       <div className="shrink-0">
         <h1 className="text-2xl font-semibold">Produtos & Estoque</h1>
         <p className="text-sm text-muted-foreground">Catálogo master de produtos e variações</p>
       </div>
 
-      <Card className="shrink-0">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Pesquisar por nome do produto, SKU interno ou IDs..."
-                className="pl-9"
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              />
-            </div>
-            <Select
-              value={category}
-              onValueChange={(value) => { setCategory(value); setPage(1); }}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrar por Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as Categorias</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Pesquisar por nome do produto, SKU interno ou IDs..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          />
+        </div>
+        <Select
+          value={category}
+          onValueChange={(value) => { setCategory(value); setPage(1); }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filtrar por Categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as Categorias</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <div className="flex items-center justify-between shrink-0">
         <p className="text-sm text-muted-foreground">
@@ -239,7 +226,7 @@ export default function Products() {
           {admin ? (
             <Button size="sm" onClick={() => setModalOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
-              Add Product
+              Novo Produto
             </Button>
           ) : null}
         </div>
@@ -302,7 +289,7 @@ export default function Products() {
                   ))
                 ) : (
                 products.map((product) => (
-                  <React.Fragment key={product.id}>
+                  <Fragment key={product.id}>
                     <TableRow
                       key={`${product.id}-data`}
                       className="cursor-pointer transition-colors hover:bg-accent/20"
@@ -374,11 +361,20 @@ export default function Products() {
                                         {variant.name || "Padrão"}
                                       </td>
                                       <td className="p-4 align-middle">
-                                        {variant.sku ? (
-                                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                            {variant.sku}
-                                          </Badge>
-                                        ) : "-"}
+                                        <div className="flex items-center gap-1">
+                                          {variant.sku ? (
+                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                              {variant.sku}
+                                            </Badge>
+                                          ) : (
+                                            <span className="text-muted-foreground">-</span>
+                                          )}
+                                          {variant.has_promotional_price ? (
+                                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                                              Promoção
+                                            </Badge>
+                                          ) : null}
+                                        </div>
                                       </td>
                                       <td className="p-4 align-middle">{formatCurrency(variant.price)}</td>
                                       <td className="p-4 align-middle">
@@ -404,7 +400,7 @@ export default function Products() {
                         </TableRow>
                       )
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 )))}
             </TableBody>
           </Table>
