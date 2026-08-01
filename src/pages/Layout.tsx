@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { sidebarItems } from "@/components/SidebarItems";
+import { isAdmin } from "@/lib/utils";
 
 import {
   DropdownMenu,
@@ -42,7 +43,7 @@ export default function Layout() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {sidebarItems.map((item) => (
+                {sidebarItems.filter((item) => !item.adminOnly || isAdmin(user?.role)).map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       isActive={location.pathname === item.url || location.pathname.startsWith(item.url + "/")}
