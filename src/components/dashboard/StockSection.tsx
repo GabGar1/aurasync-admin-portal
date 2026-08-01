@@ -15,6 +15,7 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Estoque</h2>
+      <p className="text-xs text-muted-foreground">Estoque: últimos 30 dias (período fixo)</p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Low Stock */}
         <Card>

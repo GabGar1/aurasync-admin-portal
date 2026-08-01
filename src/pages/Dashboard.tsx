@@ -1,5 +1,5 @@
 import { useDashboard } from '@/hooks/useDashboard';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import DateRangePicker from '@/components/DateRangePicker';
 import KpiCards from '@/components/dashboard/KpiCards';
 import RevenueChart from '@/components/dashboard/RevenueChart';
 import OrdersCharts from '@/components/dashboard/OrdersCharts';
@@ -8,7 +8,7 @@ import MarketingSection from '@/components/dashboard/MarketingSection';
 import StockSection from '@/components/dashboard/StockSection';
 
 export default function Dashboard() {
-  const { days, setDays, orders, marketing, stock, userStats } = useDashboard();
+  const { range, setRange, orders, marketing, stock, userStats } = useDashboard();
 
   const isLoadingOrders = orders.isLoading && !orders.data;
   const isLoadingMarketing = marketing.isLoading && !marketing.data;
@@ -17,21 +17,9 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
-      <div className="flex items-center justify-between shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-4 shrink-0">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Período:</span>
-          <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[7, 15, 30, 60, 90].map((n) => (
-                <SelectItem key={n} value={String(n)}>{n} dias</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <DateRangePicker range={range} onRangeChange={setRange} />
       </div>
 
       <KpiCards orders={orders.data} userStats={userStats.data} isLoading={isLoadingOrders || isLoadingUsers} />
