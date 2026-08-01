@@ -2,16 +2,20 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { formatTime } from "@/lib/formatters";
 
 interface Props {
+  created_at?: string | null;
   paid_at?: string | null;
   shipped_at?: string | null;
   completed_at?: string | null;
   cancelled_at?: string | null;
 }
 
-export default function OrderTimeline({ paid_at, shipped_at, completed_at, cancelled_at }: Props) {
+export default function OrderTimeline({ created_at, paid_at, shipped_at, completed_at, cancelled_at }: Props) {
   if (cancelled_at) {
     return (
       <div className="space-y-3">
+        {created_at ? (
+          <TimelineStep icon={CheckCircle2} color="text-blue-500" label="Criado" time={formatTime(created_at)} />
+        ) : null}
         <TimelineStep icon={XCircle} color="text-red-500" label="Cancelado" time={formatTime(cancelled_at)} />
       </div>
     );
@@ -19,6 +23,9 @@ export default function OrderTimeline({ paid_at, shipped_at, completed_at, cance
 
   return (
     <div className="space-y-3">
+      {created_at ? (
+        <TimelineStep icon={CheckCircle2} color="text-blue-500" label="Criado" time={formatTime(created_at)} />
+      ) : null}
       <TimelineStep icon={CheckCircle2} color={paid_at ? "text-green-500" : "text-gray-300"} label="Pago" time={paid_at ? formatTime(paid_at) : "Pendente"} />
       <TimelineStep icon={CheckCircle2} color={shipped_at ? "text-green-500" : "text-gray-300"} label="Enviado" time={shipped_at ? formatTime(shipped_at) : "Pendente"} />
       <TimelineStep icon={CheckCircle2} color={completed_at ? "text-green-500" : "text-gray-300"} label="Entregue" time={completed_at ? formatTime(completed_at) : "Pendente"} />

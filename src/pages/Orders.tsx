@@ -1,15 +1,15 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, RefreshCw, Plus, ShoppingCart, MoreHorizontal, AlertTriangle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, RefreshCw, ShoppingCart, MoreHorizontal, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi } from '@/services/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
-import { formatCurrency, formatDate, statusLabel } from '@/lib/formatters';
+import { formatCurrency, formatDate, statusLabel, preferLabel, sourceLabel, storefrontLabel, paymentMethodLabel } from '@/lib/formatters';
 import { toast } from 'sonner';
-import type { Order, CreateOrderPayload, GetOrdersResponse } from '@/types';
+import type { Order, GetOrdersResponse } from '@/types';
 import type { UseMutationResult } from '@tanstack/react-query';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Label } from '@/components/ui/label';
 import OrderTimeline from '@/components/OrderTimeline';
 import OrderFinancialSummary from '@/components/OrderFinancialSummary';
 import OrderShippingInfo from '@/components/OrderShippingInfo';
@@ -83,7 +82,6 @@ export default function Orders() {
 
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [createSheetOpen, setCreateSheetOpen] = useState(false);
 
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -103,21 +101,9 @@ export default function Orders() {
     toast.success('Pedidos atualizados em tempo real!');
   }, [qc]));
 
-  const createMutation = useMutation({
-    mutationFn: (payload: CreateOrderPayload) => ordersApi.create(payload),
-    onSuccess: () => {
-      toast.success('Pedido criado com sucesso');
-      qc.invalidateQueries({ queryKey: ['orders'] });
-      setCreateSheetOpen(false);
-    },
-    onError: (err: ApiError) => toast.error(
-      `Falha ao criar pedido: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`
-    ),
-  });
-
   const updateMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      ordersApi.update(id, { status: status as CreateOrderPayload['status'] }),
+      ordersApi.update(id, { status }),
     onSuccess: () => {
       toast.success('Status atualizado');
       qc.invalidateQueries({ queryKey: ['orders'] });
@@ -214,12 +200,6 @@ export default function Orders() {
             <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
             Sincronizar
           </Button>
-          {admin ? (
-            <Button size="sm" onClick={() => setCreateSheetOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Novo Pedido
-            </Button>
-          ) : null}
         </div>
       </div>
 
@@ -240,13 +220,7 @@ export default function Orders() {
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <ShoppingCart className="h-12 w-12 mb-4" />
             <p className="text-lg font-medium">Nenhum pedido encontrado</p>
-            <p className="text-sm mb-4">Tente ajustar os filtros ou crie um novo pedido.</p>
-            {admin ? (
-              <Button onClick={() => setCreateSheetOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Novo Pedido
-              </Button>
-            ) : null}
+            <p className="text-sm mb-4">Tente ajustar os filtros.</p>
           </div>
         ) : (
           <div className="[&>div]:overflow-visible">
@@ -383,59 +357,105 @@ export default function Orders() {
               <SheetHeader>
                 <SheetTitle>Pedido #{selectedOrder.id.slice(0, 8)}</SheetTitle>
                 <SheetDescription>
-                  <Badge className={statusBadgeClass[selectedOrder.status] || ''} variant={selectedOrder.status === 'cancelled' ? 'destructive' : 'default'}>
-                    {statusLabel(selectedOrder.status)}
-                  </Badge>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <Badge className={statusBadgeClass[selectedOrder.status] || ''} variant={selectedOrder.status === 'cancelled' || selectedOrder.status === 'CANCELED' ? 'destructive' : 'default'}>
+                      {preferLabel(selectedOrder.status_label, statusLabel(selectedOrder.status))}
+                    </Badge>
+                    {selectedOrder.commercial_status ? (
+                      <Badge variant="secondary">{selectedOrder.commercial_status}</Badge>
+                    ) : null}
+                    {selectedOrder.payment_status_label ? (
+                      <Badge className={paymentBadgeClass[selectedOrder.payment_status ?? ''] || ''}>{selectedOrder.payment_status_label}</Badge>
+                    ) : null}
+                    {selectedOrder.fulfillment_status_label ? (
+                      <Badge variant="outline">{selectedOrder.fulfillment_status_label}</Badge>
+                    ) : null}
+                  </div>
                 </SheetDescription>
               </SheetHeader>
 
               <div className="py-6 space-y-8">
                 <section>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cliente</h3>
-                  <OrderCustomerInfo customer_name={selectedOrder.customer_name} />
+                  <OrderCustomerInfo customer_name={selectedOrder.customer_name} customer_email={selectedOrder.customer_email} />
                 </section>
 
                 <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pagamento</h3>
-                  {selectedOrder.payment_status ? (
-                    <Badge className={paymentBadgeClass[selectedOrder.payment_status] || ''} variant="default">
-                      {selectedOrder.payment_status.replace(/_/g, ' ')}
-                    </Badge>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">N/A</p>
-                  )}
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Atendimento</h3>
-                  {selectedOrder.fulfillment_status ? (
-                    <Badge variant="secondary">{selectedOrder.fulfillment_status}</Badge>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">N/A</p>
-                  )}
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Linha do Tempo</h3>
-                  <OrderTimeline />
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Financeiro</h3>
-                  <OrderFinancialSummary
-                    items={selectedOrder.items}
-                    total_amount={selectedOrder.total_amount}
-                  />
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Frete</h3>
-                  <OrderShippingInfo has_free_shipping={selectedOrder.has_free_shipping} />
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Origem</h3>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="text-muted-foreground">Fonte: </span>{sourceLabel(selectedOrder.source)}</p>
+                    {selectedOrder.storefront ? (
+                      <p><span className="text-muted-foreground">Storefront: </span>{storefrontLabel(selectedOrder.storefront)}</p>
+                    ) : null}
+                  </div>
                 </section>
 
                 <section>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Itens</h3>
                   <OrderItemsTable items={selectedOrder.items} />
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pagamento</h3>
+                  <div className="space-y-1 text-sm">
+                    <p>
+                      {selectedOrder.payment_method ? paymentMethodLabel(selectedOrder.payment_method) : '-'}
+                      {selectedOrder.payment_installments ? ` (${selectedOrder.payment_installments}x)` : ''}
+                    </p>
+                    {selectedOrder.gateway ? (
+                      <p className="text-muted-foreground">Gateway: {selectedOrder.gateway}</p>
+                    ) : null}
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Frete</h3>
+                  <OrderShippingInfo
+                    shipping_cost_customer={selectedOrder.shipping_cost_customer}
+                    shipping_cost_owner={selectedOrder.shipping_cost_owner}
+                    shipping_carrier={selectedOrder.shipping_carrier}
+                    has_free_shipping={selectedOrder.has_free_shipping}
+                    shipping_city={selectedOrder.shipping_city}
+                    shipping_province={selectedOrder.shipping_province}
+                  />
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Endereço</h3>
+                  <p className="text-sm">
+                    {[selectedOrder.shipping_city, selectedOrder.shipping_province].filter(Boolean).join(' - ') || '-'}
+                  </p>
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">UTMs</h3>
+                  {selectedOrder.utm_source || selectedOrder.utm_medium || selectedOrder.utm_campaign ? (
+                    <div className="space-y-1 text-sm">
+                      {selectedOrder.utm_source ? <p>Source: {selectedOrder.utm_source}</p> : null}
+                      {selectedOrder.utm_medium ? <p>Medium: {selectedOrder.utm_medium}</p> : null}
+                      {selectedOrder.utm_campaign ? <p>Campanha: {selectedOrder.utm_campaign}</p> : null}
+                      {selectedOrder.utm_content ? <p>Conteúdo: {selectedOrder.utm_content}</p> : null}
+                      {selectedOrder.utm_term ? <p>Termo: {selectedOrder.utm_term}</p> : null}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhuma UTM registrada</p>
+                  )}
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Financeiro</h3>
+                  <OrderFinancialSummary order={selectedOrder} />
+                </section>
+
+                <section>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Linha do Tempo</h3>
+                  <OrderTimeline
+                    created_at={selectedOrder.created_at}
+                    paid_at={selectedOrder.paid_at}
+                    shipped_at={selectedOrder.shipped_at}
+                    completed_at={selectedOrder.completed_at}
+                    cancelled_at={selectedOrder.cancelled_at}
+                  />
                 </section>
 
                 {admin ? (
@@ -459,7 +479,7 @@ export default function Orders() {
                     </Select>
                     <Button
                       variant="destructive"
-                      disabled={selectedOrder.status === 'cancelled'}
+                      disabled={selectedOrder.status === 'cancelled' || selectedOrder.status === 'CANCELED'}
                       onClick={() => handleCancelClick(selectedOrder.id)}
                     >
                       Cancelar
@@ -469,20 +489,6 @@ export default function Orders() {
               </div>
             </>
           ) : null}
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={createSheetOpen} onOpenChange={setCreateSheetOpen}>
-        <SheetContent side="right" className="w-[640px] sm:max-w-[640px] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Novo Pedido</SheetTitle>
-            <SheetDescription>Preencha os dados do pedido</SheetDescription>
-          </SheetHeader>
-
-          <CreateOrderForm
-            onSubmit={(payload) => createMutation.mutate(payload)}
-            isPending={createMutation.isPending}
-          />
         </SheetContent>
       </Sheet>
 
@@ -506,132 +512,3 @@ export default function Orders() {
   );
 }
 
-function CreateOrderForm({ onSubmit, isPending }: { onSubmit: (payload: CreateOrderPayload) => void; isPending: boolean }) {
-  const [customerName, setCustomerName] = useState('');
-  const [status, setStatus] = useState<string>('open');
-  const [items, setItems] = useState<Array<{ variant_id: string; quantity: string; unit_price: string; unit_cost: string }>>([]);
-
-  function addItem() {
-    setItems([...items, { variant_id: '', quantity: '1', unit_price: '', unit_cost: '' }]);
-  }
-
-  function removeItem(index: number) {
-    setItems(items.filter((_, i) => i !== index));
-  }
-
-  function updateItem(index: number, field: string, value: string) {
-    setItems(items.map((item, i) => i === index ? { ...item, [field]: value } : item));
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!customerName.trim()) return;
-    onSubmit({
-      customer_name: customerName.trim(),
-      status: status as CreateOrderPayload['status'],
-      items: items.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: parseInt(item.quantity) || 1,
-        unit_price: parseFloat(item.unit_price) || 0,
-        unit_cost: parseFloat(item.unit_cost) || 0,
-      })),
-    });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="py-6 space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="customer_name">Cliente</Label>
-        <Input
-          id="customer_name"
-          placeholder="Nome do cliente"
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="status">Status</Label>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger id="status">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {orderStatuses.map((s) => (
-              <SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label>Itens</Label>
-          <Button type="button" variant="outline" size="sm" onClick={addItem}>
-            <Plus className="h-3 w-3 mr-1" />
-            Adicionar Item
-          </Button>
-        </div>
-        {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-2">Nenhum item adicionado</p>
-        ) : (
-          <div className="space-y-3">
-            {items.map((item, i) => (
-              <div key={i} className="flex gap-2 items-start border rounded-md p-3">
-                <div className="flex-1 space-y-2">
-                  <Input
-                    placeholder="Variant ID"
-                    value={item.variant_id}
-                    onChange={(e) => updateItem(i, 'variant_id', e.target.value)}
-                    required
-                  />
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Qtd"
-                      min={1}
-                      value={item.quantity}
-                      onChange={(e) => updateItem(i, 'quantity', e.target.value)}
-                      required
-                      className="w-20"
-                    />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      placeholder="Preço"
-                      value={item.unit_price}
-                      onChange={(e) => updateItem(i, 'unit_price', e.target.value)}
-                      required
-                      className="flex-1"
-                    />
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      placeholder="Custo"
-                      value={item.unit_cost}
-                      onChange={(e) => updateItem(i, 'unit_cost', e.target.value)}
-                      required
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 mt-0 shrink-0" onClick={() => removeItem(i)}>
-                  <span className="text-destructive font-bold">X</span>
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex gap-2 pt-4">
-        <Button type="submit" disabled={isPending || !customerName.trim()}>
-          {isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Criando...</> : 'Criar Pedido'}
-        </Button>
-      </div>
-    </form>
-  );
-}

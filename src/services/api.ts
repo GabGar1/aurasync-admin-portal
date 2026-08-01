@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type {
   LoginPayload, LoginResponse, Product, CreateProductPayload,
-  GetProductsResponse, Order, CreateOrderPayload, GetOrdersResponse,
+  GetProductsResponse, Order, GetOrdersResponse,
   InventoryTransaction, CreateInventoryPayload, GetInventoryResponse,
   User, CreateUserPayload, UpdateUserPayload, GetUsersResponse,
   OrdersResponse, MarketingResponse, StockResponse, UserStats,
@@ -123,12 +123,7 @@ export const ordersApi = {
     return response.data;
   },
 
-  create: async (order: CreateOrderPayload): Promise<Order> => {
-    const response = await api.post<Order>('/orders', order);
-    return response.data;
-  },
-
-  update: async (id: string, order: Partial<CreateOrderPayload>): Promise<Order> => {
+  update: async (id: string, order: { status: string }): Promise<Order> => {
     const response = await api.put<Order>(`/orders/${id}`, order);
     return response.data;
   },

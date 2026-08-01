@@ -95,17 +95,6 @@ export interface OrderItem {
   status: boolean;
 }
 
-export interface CreateOrderPayload {
-  customer_name: string;
-  status: 'open' | 'paid' | 'shipped' | 'closed' | 'cancelled';
-  items: {
-    variant_id: string;
-    quantity: number;
-    unit_price: number;
-    unit_cost: number;
-  }[];
-}
-
 export interface Order {
   id: string;
   nuvemshop_order_id: string | null;
