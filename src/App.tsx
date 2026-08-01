@@ -10,6 +10,7 @@ import Inventory from '@/pages/Inventory';
 import Users from '@/pages/Users';
 import Costs from '@/pages/Costs';
 import Sales from '@/pages/Sales';
+import Customers from '@/pages/Customers';
 import NotFound from '@/pages/NotFound';
 import Layout from '@/pages/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/users" element={<Users />} />
             <Route path="/costs" element={<ProtectedRoute adminOnly><Costs /></ProtectedRoute>} />
             <Route path="/sales" element={<ProtectedRoute adminOnly><Sales /></ProtectedRoute>} />
+            <Route path="/customers" element={<ProtectedRoute adminOnly><Customers /></ProtectedRoute>} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
