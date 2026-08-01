@@ -5,6 +5,8 @@ import type {
   InventoryTransaction, CreateInventoryPayload, GetInventoryResponse,
   User, CreateUserPayload, UpdateUserPayload, GetUsersResponse,
   OrdersResponse, MarketingResponse, StockResponse, UserStats,
+  CostComponent, CostComponentPayload, CostAssociation, CostSimulateInput, CostSimulateResponse,
+  ExternalSalePayload, ExternalSaleResult, Customer, CustomerDetail, CustomerOrder, GetCustomersResponse,
 } from '@/types';
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3333/api';
@@ -49,13 +51,19 @@ export const authApi = {
   },
 };
 
+export interface DashboardQueryParams {
+  days?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
 export const dashboardApi = {
-  getOrders: async (days?: number): Promise<OrdersResponse> => {
-    const response = await api.get<OrdersResponse>('/dashboard/orders', { params: { days } });
+  getOrders: async (params?: DashboardQueryParams): Promise<OrdersResponse> => {
+    const response = await api.get<OrdersResponse>('/dashboard/orders', { params });
     return response.data;
   },
-  getMarketing: async (days?: number): Promise<MarketingResponse> => {
-    const response = await api.get<MarketingResponse>('/dashboard/marketing', { params: { days } });
+  getMarketing: async (params?: DashboardQueryParams): Promise<MarketingResponse> => {
+    const response = await api.get<MarketingResponse>('/dashboard/marketing', { params });
     return response.data;
   },
   getStock: async (days?: number): Promise<StockResponse> => {
@@ -175,6 +183,75 @@ export const usersApi = {
 
   delete: async (id: string): Promise<void> => {
     await api.delete(`/users/${id}`);
+  },
+};
+
+export const costComponentsApi = {
+  list: async (params?: { is_active?: boolean; search?: string }): Promise<CostComponent[]> => {
+    const response = await api.get<CostComponent[]>('/cost-components', { params });
+    return response.data;
+  },
+
+  create: async (payload: CostComponentPayload): Promise<CostComponent> => {
+    const response = await api.post<CostComponent>('/cost-components', payload);
+    return response.data;
+  },
+
+  update: async (id: string, payload: Partial<CostComponentPayload>): Promise<CostComponent> => {
+    const response = await api.put<CostComponent>(`/cost-components/${id}`, payload);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/cost-components/${id}`);
+  },
+
+  getByProduct: async (productId: string): Promise<{ associations: CostAssociation[] }> => {
+    const response = await api.get<{ associations: CostAssociation[] }>(`/cost-components/product/${productId}`);
+    return response.data;
+  },
+
+  associate: async (payload: { product_id: string; cost_component_id: string; quantity: number }): Promise<CostAssociation> => {
+    const response = await api.post<CostAssociation>('/cost-components/associate', payload);
+    return response.data;
+  },
+
+  removeAssociation: async (associationId: string): Promise<void> => {
+    await api.delete(`/cost-components/associate/${associationId}`);
+  },
+
+  simulate: async (payload: CostSimulateInput): Promise<CostSimulateResponse> => {
+    const response = await api.post<CostSimulateResponse>('/cost-components/simulate', payload);
+    return response.data;
+  },
+};
+
+export const externalSalesApi = {
+  create: async (payload: ExternalSalePayload): Promise<ExternalSaleResult> => {
+    const response = await api.post<ExternalSaleResult>('/external-sales', payload);
+    return response.data;
+  },
+
+  searchCustomers: async (params?: { page?: number; limit?: number; search?: string }): Promise<GetCustomersResponse> => {
+    const response = await api.get<GetCustomersResponse>('/external-sales/customers', { params });
+    return response.data;
+  },
+};
+
+export const customersApi = {
+  getAll: async (params?: { page?: number; limit?: number; search?: string }): Promise<GetCustomersResponse> => {
+    const response = await api.get<GetCustomersResponse>('/customers', { params });
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<CustomerDetail> => {
+    const response = await api.get<CustomerDetail>(`/customers/${id}`);
+    return response.data;
+  },
+
+  getOrders: async (id: string): Promise<CustomerOrder[]> => {
+    const response = await api.get<CustomerOrder[]>(`/customers/${id}/orders`);
+    return response.data;
   },
 };
 
