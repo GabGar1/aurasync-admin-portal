@@ -28,6 +28,7 @@ export interface ProductVariant {
   packaging_cost: number;
   platform_fee_percent: number;
   fixed_fee: number;
+  has_promotional_price: boolean | null;
 }
 
 export interface Product {
@@ -63,17 +64,40 @@ export interface CreateProductPayload {
   }[];
 }
 
+export interface CostBreakdownItem {
+  component_id: string | null;
+  name: string;
+  type: string;
+  category: string;
+  unit_value: number;
+  quantity: number;
+  line_total: number;
+}
+
 export interface OrderItem {
   id: string;
   variant_id: string;
   quantity: number;
   unit_price: number;
   unit_cost: number;
+  unit_packaging_cost: number;
+  unit_platform_fee: number;
+  unit_tax: number;
+  unit_shipping_cost: number;
+  unit_operational_cost: number;
+  unit_marketing_cost: number;
+  unit_other_cost: number;
+  unit_total_cost: number;
+  unit_profit: number;
+  margin_percent: number;
+  cost_breakdown: CostBreakdownItem[] | null;
+  has_promotional_price: boolean | null;
+  status: boolean;
 }
 
 export interface CreateOrderPayload {
   customer_name: string;
-  status: 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELED';
+  status: 'open' | 'paid' | 'shipped' | 'closed' | 'cancelled';
   items: {
     variant_id: string;
     quantity: number;
@@ -84,9 +108,41 @@ export interface CreateOrderPayload {
 
 export interface Order {
   id: string;
-  customer_name: string;
+  nuvemshop_order_id: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  status: string;
+  status_label?: string;
+  payment_status_label?: string;
+  fulfillment_status_label?: string;
+  commercial_status?: string;
   total_amount: number;
-  status: 'PENDING' | 'PAID' | 'SHIPPED' | 'CANCELED';
+  total_cost?: number;
+  total_profit?: number;
+  margin_percent?: number;
+  source?: string;
+  storefront?: string | null;
+  discount_amount: number | null;
+  payment_status: string | null;
+  fulfillment_status: string | null;
+  payment_method: string | null;
+  payment_installments: number | null;
+  gateway: string | null;
+  has_free_shipping: boolean | null;
+  shipping_cost_customer: number | null;
+  shipping_cost_owner: number | null;
+  shipping_carrier: string | null;
+  shipping_city: string | null;
+  shipping_province: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  paid_at: string | null;
+  shipped_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
   created_at: string;
   items: OrderItem[];
 }
@@ -267,8 +323,166 @@ export interface StockResponse {
   dead_stock: DeadStockItem[];
 }
 
+export interface ApiError {
+  response?: { data?: { error?: string } };
+  message?: string;
+}
+
 export interface UserStats {
   total: number;
   byRole: Record<string, number>;
   recent: number;
+}
+
+export type CostComponentType = 'FIXED' | 'PERCENT' | 'PER_ORDER' | 'MONTHLY';
+export type CostComponentCategory = 'PACKAGING' | 'TAX' | 'FEE' | 'SHIPPING' | 'OPERATIONAL' | 'MARKETING' | 'OTHER';
+export type CalculationBase = 'PRICE' | 'COST';
+
+export interface CostComponent {
+  id: string;
+  name: string;
+  description: string | null;
+  type: CostComponentType;
+  category: CostComponentCategory;
+  value: number;
+  calculation_base: CalculationBase;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CostComponentPayload {
+  name: string;
+  description?: string | null;
+  type: CostComponentType;
+  category?: CostComponentCategory;
+  value: number;
+  calculation_base?: CalculationBase;
+  is_active?: boolean;
+}
+
+export interface CostAssociation {
+  id: string;
+  product_id: string;
+  cost_component_id: string;
+  quantity: number;
+  component?: CostComponent;
+}
+
+export interface CostSimulateInput {
+  variant_id: string;
+  unit_price: number;
+  quantity: number;
+}
+
+export interface CostSimulateResponse {
+  unit_cost: number;
+  unit_packaging_cost: number;
+  unit_platform_fee: number;
+  unit_tax: number;
+  unit_shipping_cost: number;
+  unit_operational_cost: number;
+  unit_marketing_cost: number;
+  unit_other_cost: number;
+  unit_total_cost: number;
+  unit_profit: number;
+  margin_percent: number;
+  cost_breakdown: CostBreakdownItem[];
+}
+
+export interface ExternalSaleItemPayload {
+  variant_id: string;
+  quantity: number;
+  unit_price: number;
+}
+
+export interface ExternalSalePayload {
+  customer_name: string;
+  customer_email?: string | null;
+  items: ExternalSaleItemPayload[];
+  discount_amount?: number;
+  payment_method?: string;
+  gateway?: string;
+  payment_installments?: number;
+  shipping_cost_owner?: number;
+  shipping_cost_customer?: number;
+  status?: 'PENDING' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
+}
+
+export interface ExternalSaleResultItem {
+  id: string;
+  variant_id: string;
+  quantity: number;
+  unit_price: number;
+  unit_cost: number;
+  unit_total_cost: number;
+  unit_profit: number;
+  margin_percent: number;
+  cost_breakdown: CostBreakdownItem[] | null;
+  status: boolean;
+}
+
+export interface ExternalSaleResult {
+  id: string;
+  nuvemshop_order_id?: string | null;
+  customer_name: string | null;
+  status: string;
+  total_amount: number;
+  source?: string;
+  discount_amount: number | null;
+  shipping_cost_customer: number | null;
+  shipping_cost_owner: number | null;
+  payment_method: string | null;
+  gateway: string | null;
+  payment_installments: number | null;
+  total_cost?: number;
+  total_profit?: number;
+  margin_percent?: number;
+  created_at: string;
+  updated_at: string;
+  items: ExternalSaleResultItem[];
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string | null;
+  city: string | null;
+  province: string | null;
+  order_count: number;
+  total_spent: number;
+  average_ticket: number;
+  first_purchase_at: string | null;
+  last_purchase_at: string | null;
+  created_at: string;
+}
+
+export interface CustomerIndicators {
+  order_count: number;
+  total_spent: number;
+  average_ticket: number;
+  first_purchase_at: string | null;
+  last_purchase_at: string | null;
+  favorite_payment_method: string | null;
+  favorite_gateway: string | null;
+  recurrence: number;
+}
+
+export interface CustomerDetail extends Customer {
+  indicators: CustomerIndicators;
+}
+
+export interface CustomerOrder {
+  id: string;
+  customer_name: string | null;
+  status: string;
+  total_amount: number;
+  created_at: string;
+}
+
+export interface GetCustomersResponse {
+  customers: Customer[];
+  total: number;
+  page: number;
+  limit: number;
 }
