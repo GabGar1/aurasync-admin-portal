@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { costComponentSchema } from './schemas';
+import { costComponentSchema, externalSaleSchema } from './schemas';
 
 describe('costComponentSchema', () => {
   it('aceita componente válido', () => {
@@ -32,5 +32,45 @@ describe('costComponentSchema', () => {
   it('aceita FIXED sem base de cálculo', () => {
     const result = costComponentSchema.safeParse({ name: 'X', type: 'FIXED', value: 1 });
     expect(result.success).toBe(true);
+  });
+});
+
+describe('externalSaleSchema', () => {
+  it('aceita venda válida', () => {
+    const result = externalSaleSchema.safeParse({
+      customer_name: 'João',
+      items: [{ variant_id: 'uuid-a', quantity: 2, unit_price: 10 }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejeita sem nome do cliente', () => {
+    const result = externalSaleSchema.safeParse({
+      customer_name: '',
+      items: [{ variant_id: 'uuid-a', quantity: 1, unit_price: 10 }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejeita sem itens', () => {
+    const result = externalSaleSchema.safeParse({ customer_name: 'João', items: [] });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejeita item sem variante', () => {
+    const result = externalSaleSchema.safeParse({
+      customer_name: 'João',
+      items: [{ quantity: 1, unit_price: 10 }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejeita email inválido', () => {
+    const result = externalSaleSchema.safeParse({
+      customer_name: 'João',
+      customer_email: 'invalido',
+      items: [{ variant_id: 'uuid-a', quantity: 1, unit_price: 10 }],
+    });
+    expect(result.success).toBe(false);
   });
 });

@@ -19,3 +19,22 @@ export const costComponentSchema = z.object({
 });
 
 export type CostComponentFormValues = z.infer<typeof costComponentSchema>;
+
+export const externalSaleSchema = z.object({
+  customer_name: z.string().min(1, 'Nome do cliente é obrigatório').max(255),
+  customer_email: z.string().email('Email inválido').optional().or(z.literal('')),
+  items: z.array(z.object({
+    variant_id: z.string().min(1, 'Selecione uma variante'),
+    quantity: z.coerce.number().int().positive('Quantidade deve ser ao menos 1'),
+    unit_price: z.coerce.number().min(0, 'Preço não pode ser negativo'),
+  })).min(1, 'Adicione ao menos um item'),
+  discount_amount: z.coerce.number().min(0).optional(),
+  payment_method: z.string().optional(),
+  gateway: z.string().optional(),
+  payment_installments: z.coerce.number().int().positive().optional(),
+  shipping_cost_owner: z.coerce.number().min(0).optional(),
+  shipping_cost_customer: z.coerce.number().min(0).optional(),
+  status: z.enum(['PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED']).default('PAID'),
+});
+
+export type ExternalSaleFormValues = z.infer<typeof externalSaleSchema>;

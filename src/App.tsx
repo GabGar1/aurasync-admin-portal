@@ -9,6 +9,7 @@ import Orders from '@/pages/Orders';
 import Inventory from '@/pages/Inventory';
 import Users from '@/pages/Users';
 import Costs from '@/pages/Costs';
+import Sales from '@/pages/Sales';
 import NotFound from '@/pages/NotFound';
 import Layout from '@/pages/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/users" element={<Users />} />
             <Route path="/costs" element={<ProtectedRoute adminOnly><Costs /></ProtectedRoute>} />
+            <Route path="/sales" element={<ProtectedRoute adminOnly><Sales /></ProtectedRoute>} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
