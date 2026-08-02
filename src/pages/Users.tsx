@@ -31,11 +31,11 @@ function RoleBadge({ role }: { role: string }) {
   return <Badge variant="secondary">{role}</Badge>;
 }
 
-function StatusDisplay({ status }: { status: string }) {
+function StatusDisplay({ status }: { status: boolean }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={`h-2 w-2 rounded-full ${status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
-      <span className="text-sm">{status === 'active' ? 'Ativo' : 'Inativo'}</span>
+      <span className={`h-2 w-2 rounded-full ${status ? 'bg-green-500' : 'bg-gray-400'}`} />
+      <span className="text-sm">{status ? 'Ativo' : 'Inativo'}</span>
     </span>
   );
 }
@@ -430,7 +430,7 @@ function CreateUserForm({ onSubmit, isPending }: { onSubmit: (payload: CreateUse
 function EditUserForm({ user, onSubmit, isPending }: { user: User; onSubmit: (payload: UpdateUserPayload) => void; isPending: boolean }) {
   const [firstName, setFirstName] = useState(user.first_name);
   const [lastName, setLastName] = useState(user.last_name);
-  const [status, setStatus] = useState(user.status);
+  const [status, setStatus] = useState(user.status ? 'active' : 'inactive');
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -438,7 +438,7 @@ function EditUserForm({ user, onSubmit, isPending }: { user: User; onSubmit: (pa
     onSubmit({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
-      status,
+      status: status === 'active',
     });
   }
 

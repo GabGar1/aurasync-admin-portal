@@ -4,7 +4,7 @@ export interface User {
   first_name: string;
   last_name: string;
   role: 'ADMIN' | 'EMPLOYEE' | 'SUPER_ADMIN';
-  status: string;
+  status: boolean;
   created_at: string;
 }
 
@@ -183,7 +183,7 @@ export interface CreateUserPayload {
 export interface UpdateUserPayload {
   first_name?: string;
   last_name?: string;
-  status?: string;
+  status?: boolean;
 }
 
 export interface RevenueTrendItem {

@@ -1,18 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { z } from 'zod';
 import { authApi } from '@/services/api';
+import { storedUserSchema } from '@/lib/schemas';
 import type { User } from '@/types';
-
-const StoredUserSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  first_name: z.string(),
-  last_name: z.string(),
-  role: z.enum(['ADMIN', 'EMPLOYEE', 'SUPER_ADMIN']),
-  status: z.string(),
-  created_at: z.string(),
-});
 
 const USER_KEY = 'aurasync_user';
 
@@ -29,7 +19,7 @@ export function useAuth() {
     if (!raw) return null;
     try {
       const parsed = JSON.parse(raw);
-      const result = StoredUserSchema.safeParse(parsed);
+      const result = storedUserSchema.safeParse(parsed);
       if (!result.success) {
         clearUser();
         return null;

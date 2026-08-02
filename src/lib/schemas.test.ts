@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { costComponentSchema, externalSaleSchema } from './schemas';
+import { costComponentSchema, externalSaleSchema, storedUserSchema } from './schemas';
 
 describe('costComponentSchema', () => {
   it('aceita componente válido', () => {
@@ -70,6 +70,47 @@ describe('externalSaleSchema', () => {
       customer_name: 'João',
       customer_email: 'invalido',
       items: [{ variant_id: 'uuid-a', quantity: 1, unit_price: 10 }],
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('storedUserSchema', () => {
+  it('aceita o payload real do backend /auth/me (status boolean)', () => {
+    const result = storedUserSchema.safeParse({
+      id: 'a96175ef-de55-46ea-a55b-f2731cc491e9',
+      email: 'admin@aurasync.com',
+      first_name: 'Super',
+      last_name: 'Admin',
+      role: 'SUPER_ADMIN',
+      status: true,
+      created_at: '2026-07-25T22:41:39.077Z',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('aceita status false', () => {
+    const result = storedUserSchema.safeParse({
+      id: 'a',
+      email: 'u@example.com',
+      first_name: 'A',
+      last_name: 'B',
+      role: 'EMPLOYEE',
+      status: false,
+      created_at: '2026-07-25T22:41:39.077Z',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejeita role inválida', () => {
+    const result = storedUserSchema.safeParse({
+      id: 'a',
+      email: 'u@example.com',
+      first_name: 'A',
+      last_name: 'B',
+      role: 'OWNER',
+      status: true,
+      created_at: '2026-07-25T22:41:39.077Z',
     });
     expect(result.success).toBe(false);
   });

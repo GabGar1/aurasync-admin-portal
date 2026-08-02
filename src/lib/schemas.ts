@@ -44,3 +44,13 @@ export const externalSaleSchema = z.object({
 });
 
 export type ExternalSaleFormValues = z.infer<typeof externalSaleSchema>;
+
+export const storedUserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  first_name: z.string(),
+  last_name: z.string(),
+  role: z.enum(['ADMIN', 'EMPLOYEE', 'SUPER_ADMIN']),
+  status: z.boolean(),
+  created_at: z.string(),
+});
