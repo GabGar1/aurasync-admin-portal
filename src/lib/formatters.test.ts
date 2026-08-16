@@ -31,7 +31,7 @@ describe('glossário PT-BR', () => {
   });
 
   it('traduz storefront', () => {
-    expect(storefrontLabel('mobile')).toBe('Mobile');
+    expect(storefrontLabel('mobile')).toBe('Celular');
     expect(storefrontLabel('web')).toBe('Site');
     expect(storefrontLabel('other_devices')).toBe('Outros dispositivos');
     expect(storefrontLabel(null)).toBe('-');
@@ -143,7 +143,7 @@ describe('rótulos novos', () => {
 
   it('ajusta pix e storefronts', () => {
     expect(paymentMethodLabel('pix')).toBe('Pix');
-    expect(storefrontLabel('mobile')).toBe('Mobile');
+    expect(storefrontLabel('mobile')).toBe('Celular');
     expect(storefrontLabel('store')).toBe('Site');
     expect(storefrontLabel('web')).toBe('Site');
   });

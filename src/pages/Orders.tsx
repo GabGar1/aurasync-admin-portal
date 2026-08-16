@@ -40,6 +40,7 @@ const statusBadgeClass: Record<string, string> = {
   closed: 'bg-cyan-100 text-cyan-800 hover:bg-cyan-100 border-transparent',
   delivered: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
   cancelled: '',
+  pending: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
 };
 
 const paymentBadgeClass: Record<string, string> = {
@@ -231,7 +232,9 @@ export default function Orders() {
                     </TableRow>
                   ))
                 ) : (
-                  orders.map((order) => (
+                  orders.map((order) => {
+                    const effective = effectiveOrderStatus(order);
+                    return (
                     <TableRow
                       key={order.id}
                       className="cursor-pointer"
@@ -244,7 +247,6 @@ export default function Orders() {
                       <TableCell>{formatDate(order.created_at)}</TableCell>
                       <TableCell>
                         {(() => {
-                          const effective = effectiveOrderStatus(order);
                           return (
                             <Badge className={statusBadgeClass[effective.key] || ''} variant={effective.key === 'cancelled' ? 'destructive' : 'default'}>
                               {effective.label}
@@ -263,13 +265,13 @@ export default function Orders() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                disabled={order.status === 'PAID'}
+                                disabled={effective.key === 'paid' || effective.key === 'delivered'}
                                 onClick={() => updateMutation.mutate({ id: order.id, status: 'PAID' })}
                               >
                                 Marcar como Pago
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                disabled={order.status === 'SHIPPED'}
+                                disabled={effective.key === 'shipped' || effective.key === 'delivered'}
                                 onClick={() => updateMutation.mutate({ id: order.id, status: 'SHIPPED' })}
                               >
                                 Marcar como Enviado
@@ -277,7 +279,7 @@ export default function Orders() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive"
-                                disabled={order.status === 'CANCELED' || order.status === 'cancelled'}
+                                disabled={effective.key === 'cancelled'}
                                 onClick={() => handleCancelClick(order.id)}
                               >
                                 Cancelar Pedido
@@ -287,7 +289,8 @@ export default function Orders() {
                         ) : null}
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -422,6 +425,7 @@ export default function Orders() {
                   <div className="flex gap-2 pt-4 border-t">
                     <Select
                       value={selectedOrder.status}
+                      disabled={effectiveOrderStatus(selectedOrder).key === 'cancelled'}
                       onValueChange={(value) => {
                         updateMutation.mutate({ id: selectedOrder.id, status: value });
                       }}
@@ -439,7 +443,7 @@ export default function Orders() {
                     </Select>
                     <Button
                       variant="destructive"
-                      disabled={selectedOrder.status === 'cancelled' || selectedOrder.status === 'CANCELED'}
+                      disabled={effectiveOrderStatus(selectedOrder).key === 'cancelled'}
                       onClick={() => handleCancelClick(selectedOrder.id)}
                     >
                       Cancelar

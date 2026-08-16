@@ -225,6 +225,8 @@ export default function Products() {
                       type="button"
                       className="flex items-center gap-1 hover:text-foreground"
                       onClick={toggleStockSort}
+                      aria-label="Ordenar por Estoque Local"
+                      aria-pressed={stockSort !== null}
                       title={stockSort ? "Clique para limpar a ordenação" : "Clique para ordenar por estoque"}
                     >
                       Estoque Local

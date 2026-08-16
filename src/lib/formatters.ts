@@ -121,7 +121,7 @@ export function allocationBasisLabel(basis: string | null | undefined): string {
 }
 
 const storefrontLabels: Record<string, string> = {
-  mobile: 'Mobile',
+  mobile: 'Celular',
   store: 'Site',
   web: 'Site',
   other_devices: 'Outros dispositivos',

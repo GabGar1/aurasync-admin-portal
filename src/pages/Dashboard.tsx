@@ -37,10 +37,10 @@ export default function Dashboard() {
               size="sm"
               className="mt-2 ml-2"
               onClick={() => {
-                orders.refetch();
-                marketing.refetch();
-                stock.refetch();
-                userStats.refetch();
+                if (orders.isError) orders.refetch();
+                if (marketing.isError) marketing.refetch();
+                if (stock.isError) stock.refetch();
+                if (userStats.isError) userStats.refetch();
               }}
             >
               Tentar novamente
