@@ -193,6 +193,11 @@ export interface UpdateUserPayload {
   status?: boolean;
 }
 
+export interface ChangePasswordPayload {
+  current_password: string;
+  new_password: string;
+}
+
 export interface RevenueTrendItem {
   date: string;
   revenue: number;

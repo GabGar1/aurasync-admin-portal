@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +31,14 @@ export default function Login() {
     defaultValues: { email: "", password: "" },
   });
 
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const timer = setInterval(() => setCooldownSeconds((s) => s - 1), 1000);
+    return () => clearInterval(timer);
+  }, [cooldownSeconds]);
+
   const mutation = useMutation({
     mutationFn: (payload: LoginForm) => authApi.login(payload as LoginPayload),
     onSuccess: (data) => {
@@ -40,7 +49,10 @@ export default function Login() {
     onError: (error) => {
       form.clearErrors("root");
       if (error instanceof AxiosError) {
-        if (error.response?.status === 401) {
+        if (error.response?.status === 429) {
+          setCooldownSeconds(60);
+          form.setError("root", { message: "Muitas tentativas. Tente novamente em instantes." });
+        } else if (error.response?.status === 401) {
           form.setError("root", { message: getFriendlyError(error) });
         } else if (!error.response) {
           form.setError("root", { message: "Erro de conexão. Verifique sua internet." });
@@ -114,8 +126,8 @@ export default function Login() {
                   {form.formState.errors.root.message}
                 </p>
               )}
-              <Button type="submit" className="w-full" size="lg" disabled={mutation.isPending}>
-                {mutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Entrando...</> : "Entrar"}
+              <Button type="submit" className="w-full" size="lg" disabled={mutation.isPending || cooldownSeconds > 0}>
+                {mutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Entrando...</> : cooldownSeconds > 0 ? `Aguarde ${cooldownSeconds}s` : "Entrar"}
               </Button>
             </form>
           </Form>

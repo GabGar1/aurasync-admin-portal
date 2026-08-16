@@ -14,9 +14,28 @@ describe('getFriendlyError', () => {
     expect(getFriendlyError({ response: { data: { error: 'Session cookie not found. Use cookie-based auth.' } } })).toBe('Sessão expirada. Faça login novamente.');
   });
 
-  it('usa err.message quando não há response', () => {
+  it('traduz os novos erros de segurança do backend', () => {
+    expect(getFriendlyError({ response: { data: { error: 'Too Many Requests' } } })).toBe('Muitas tentativas. Tente novamente em instantes.');
+    expect(getFriendlyError({ response: { data: { error: 'Internal server error' } } })).toBe('Erro interno do servidor');
+    expect(getFriendlyError({ response: { data: { error: 'Missing CSRF token' } } })).toBe('Sessão expirada. Faça login novamente.');
+    expect(getFriendlyError({ response: { data: { error: 'Invalid CSRF token' } } })).toBe('Sessão expirada. Faça login novamente.');
+    expect(getFriendlyError({ response: { data: { error: 'Password must be at least 8 characters' } } })).toBe('A senha deve ter pelo menos 8 caracteres');
+    expect(getFriendlyError({ response: { data: { error: 'Current password is incorrect' } } })).toBe('Senha atual incorreta');
+    expect(getFriendlyError({ response: { data: { error: 'Forbidden: cannot modify a SUPER_ADMIN account' } } })).toBe('Não é permitido modificar uma conta SUPER_ADMIN');
+    expect(getFriendlyError({ response: { data: { error: 'Forbidden: cannot delete a SUPER_ADMIN account' } } })).toBe('Não é permitido excluir uma conta SUPER_ADMIN');
+  });
+
+  it('nunca exibe o texto de erros 500', () => {
+    expect(getFriendlyError({ response: { status: 500, data: { error: 'garbage interno' } } })).toBe('Erro interno do servidor');
+  });
+
+  it('retorna mensagem genérica PT para erros sem tradução', () => {
+    expect(getFriendlyError({ response: { data: { error: 'Unknown backend message' } } })).toBe('Ocorreu um erro inesperado. Tente novamente.');
+  });
+
+  it('usa err.message quando não há response, aplicando as mesmas regras', () => {
     expect(getFriendlyError({ message: 'Invalid email or password' })).toBe('Email ou senha inválidos');
-    expect(getFriendlyError({ message: 'Coisa estranha aconteceu' })).toBe('Coisa estranha aconteceu');
+    expect(getFriendlyError({ message: 'Coisa estranha aconteceu' })).toBe('Ocorreu um erro inesperado. Tente novamente.');
   });
 
   it('retorna Erro desconhecido quando não há mensagem', () => {

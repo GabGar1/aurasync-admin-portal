@@ -18,7 +18,7 @@ export interface SidebarItem {
 }
 
 export const sidebarItems: SidebarItem[] = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, adminOnly: true },
   { title: "Produtos", url: "/products", icon: Package },
   { title: "Pedidos", url: "/orders", icon: ShoppingCart },
   { title: "Inventário", url: "/inventory", icon: BarChart3 },

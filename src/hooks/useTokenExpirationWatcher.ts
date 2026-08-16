@@ -11,8 +11,10 @@ export default function useTokenExpirationWatcher() {
     const id = setInterval(async () => {
       try {
         await authApi.getMe();
-      } catch {
-        logout();
+      } catch (err) {
+        if ((err as { response?: { status?: unknown } })?.response?.status === 401) {
+          logout();
+        }
       }
     }, CHECK_INTERVAL);
 
