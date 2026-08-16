@@ -4,6 +4,7 @@ import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { productsApi } from '@/services/api';
 import { useDebounce } from '@/hooks/useDebounce';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -58,9 +59,9 @@ export default function VariantPicker({ value, onSelect, placeholder = 'Buscar p
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between font-normal"
+          className="w-full justify-between font-normal h-10 truncate"
         >
-          {value ? `${value.product_name} — ${value.variant_name}` : placeholder}
+          {value ? `${value.product_name} — ${value.variant_name} · ${formatCurrency(value.price)}` : placeholder}
           <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
         </Button>
       </PopoverTrigger>

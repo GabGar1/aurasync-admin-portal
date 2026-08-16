@@ -68,7 +68,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
                     <SummaryRow label="Total gasto" value={formatCurrency(indicators.total_spent)} />
                     <SummaryRow label="Ticket médio" value={formatCurrency(indicators.average_ticket)} />
                     <SummaryRow label="Primeira compra" value={formatDate(indicators.first_purchase_at)} />
-                    <SummaryRow label="Última compra" value={formatDate(indicators.last_purchase_at)} />
+                    <SummaryRow label="Última compra" value={formatDate(indicators.last_purchase_at ?? indicators.first_purchase_at)} />
                     {customer.city || customer.province ? (
                       <SummaryRow label="Cidade / UF" value={[customer.city, customer.province].filter(Boolean).join(' - ')} />
                     ) : null}

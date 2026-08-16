@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { statusLabel } from '@/lib/formatters';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import type { HourStats, OrderStatusStats } from '@/types';
 
@@ -61,7 +62,7 @@ export default function OrdersCharts({ byHour, byStatus, isLoading }: OrdersChar
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
-                <Pie data={byStatus} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={80} innerRadius={50} label={({ status, count }) => `${status}: ${count}`}>
+                <Pie data={byStatus} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={80} innerRadius={50} label={({ status, count }) => `${statusLabel(status)}: ${count}`}>
                   {byStatus.map((entry) => (
                     <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || '#888'} />
                   ))}

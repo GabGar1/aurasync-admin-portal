@@ -2,8 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency } from '@/lib/formatters';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { StockResponse } from '@/types';
 
 interface StockSectionProps {
@@ -123,24 +121,6 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
                   </TableBody>
                 </Table>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Stock Value by Category */}
-        <Card>
-          <CardHeader><CardTitle>Valor em Estoque por Categoria</CardTitle></CardHeader>
-          <CardContent>
-            {isLoading ? <Skeleton className="h-[200px]" /> : !data?.stock_value_by_category?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
-              <ResponsiveContainer width="100%" height={Math.max(200, data.stock_value_by_category.length * 50)}>
-                <BarChart data={data.stock_value_by_category} layout="vertical" margin={{ left: 100 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
-                  <YAxis type="category" dataKey="category" width={90} tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                  <Bar dataKey="total_value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} label={({ value }: { value: number }) => formatCurrency(value)} />
-                </BarChart>
-              </ResponsiveContainer>
             )}
           </CardContent>
         </Card>

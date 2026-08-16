@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { costComponentSchema, externalSaleSchema, storedUserSchema } from './schemas';
+import { costComponentSchema, productSubgroupSchema, externalSaleSchema, storedUserSchema } from './schemas';
 
 describe('costComponentSchema', () => {
   it('aceita componente válido', () => {
@@ -32,6 +32,50 @@ describe('costComponentSchema', () => {
   it('aceita FIXED sem base de cálculo', () => {
     const result = costComponentSchema.safeParse({ name: 'X', type: 'FIXED', value: 1 });
     expect(result.success).toBe(true);
+  });
+
+  it('aceita componente PACKAGING com capacidade', () => {
+    const result = costComponentSchema.safeParse({
+      name: 'Caixa', type: 'PACKAGING', category: 'PACKAGING',
+      value: 5, max_products_per_package: 6, consolidates: true,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('trata capacidade vazia como ausente', () => {
+    const nonPackaging = costComponentSchema.safeParse({ name: 'Fixo', type: 'FIXED', value: 10, max_products_per_package: '' });
+    expect(nonPackaging.success).toBe(true);
+    const packaging = costComponentSchema.safeParse({ name: 'Caixa', type: 'PACKAGING', value: 5, max_products_per_package: '' });
+    expect(packaging.success).toBe(false);
+  });
+
+  it('exige capacidade para PACKAGING', () => {
+    const result = costComponentSchema.safeParse({ name: 'Caixa', type: 'PACKAGING', value: 5 });
+    expect(result.success).toBe(false);
+  });
+
+  it('exige base de rateio para MONTHLY_FIXED', () => {
+    const without = costComponentSchema.safeParse({ name: 'Equipe', type: 'MONTHLY_FIXED', value: 500 });
+    expect(without.success).toBe(false);
+    const withBasis = costComponentSchema.safeParse({ name: 'Equipe', type: 'MONTHLY_FIXED', value: 500, allocation_basis: 'PER_ORDER' });
+    expect(withBasis.success).toBe(true);
+  });
+
+  it('valida período como AAAA-MM-DD', () => {
+    const bad = costComponentSchema.safeParse({ name: 'Tráfego', type: 'FIXED', value: 10, period_start: '01-08-2026' });
+    expect(bad.success).toBe(false);
+    const good = costComponentSchema.safeParse({ name: 'Tráfego', type: 'FIXED', value: 10, period_start: '2026-08-01', period_end: '2026-08-31' });
+    expect(good.success).toBe(true);
+  });
+
+  it('rejeita tipo antigo MONTHLY', () => {
+    const result = costComponentSchema.safeParse({ name: 'Antigo', type: 'MONTHLY', value: 1 });
+    expect(result.success).toBe(false);
+  });
+
+  it('valida subgrupo', () => {
+    expect(productSubgroupSchema.safeParse({ name: 'Anéis' }).success).toBe(true);
+    expect(productSubgroupSchema.safeParse({ name: '' }).success).toBe(false);
   });
 });
 

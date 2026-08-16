@@ -22,7 +22,7 @@ export default function RevenueChart({ data, isLoading }: RevenueChartProps) {
           <p className="text-muted-foreground text-center py-16">Nenhum dado disponível</p>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={data}>
+            <AreaChart data={[...data].sort((a, b) => a.date.localeCompare(b.date))}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />

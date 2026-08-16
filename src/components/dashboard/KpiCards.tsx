@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, roleLabel } from '@/lib/formatters';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import type { OrdersResponse, UserStats } from '@/types';
 
@@ -90,7 +90,7 @@ export default function KpiCards({ orders, userStats, isLoading }: KpiCardsProps
               <div className="text-2xl font-bold">{userStats.total}</div>
               <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
                 {Object.entries(userStats.byRole).map(([role, count]) => (
-                  <Badge key={role} variant="outline">{role}: {count}</Badge>
+                  <Badge key={role} variant="outline">{roleLabel(role)}: {count}</Badge>
                 ))}
                 <span className="ml-1">(+{userStats.recent} novos)</span>
               </div>

@@ -24,7 +24,7 @@ export function useAuth() {
         clearUser();
         return null;
       }
-      return result.data;
+      return result.data as User;
     } catch {
       clearUser();
       return null;

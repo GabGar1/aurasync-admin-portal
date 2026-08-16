@@ -1,17 +1,12 @@
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { dashboardApi } from '@/services/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import type { DateRange } from '@/components/DateRangePicker';
 
-function toIsoStart(date: Date): string {
-  return date.toISOString();
-}
-
-function toIsoEnd(date: Date): string {
-  const end = new Date(date);
-  end.setHours(23, 59, 59, 999);
-  return end.toISOString();
+function toLocalDate(date: Date): string {
+  return format(date, 'yyyy-MM-dd');
 }
 
 export function useDashboard() {
@@ -25,8 +20,8 @@ export function useDashboard() {
   const params = useCallback(() => {
     const base: { days?: number; start_date?: string; end_date?: string } = { days: 30 };
     if (range.from && range.to) {
-      base.start_date = toIsoStart(range.from);
-      base.end_date = toIsoEnd(range.to);
+      base.start_date = toLocalDate(range.from);
+      base.end_date = toLocalDate(range.to);
       const diffDays = Math.round((range.to.getTime() - range.from.getTime()) / 86400000) + 1;
       base.days = diffDays;
     }

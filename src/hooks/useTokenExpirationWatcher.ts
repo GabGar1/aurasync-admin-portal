@@ -18,4 +18,6 @@ export default function useTokenExpirationWatcher() {
 
     return () => clearInterval(id);
   }, [logout]);
+
+  return null;
 }
