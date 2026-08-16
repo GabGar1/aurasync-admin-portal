@@ -53,7 +53,7 @@ const paymentBadgeClass: Record<string, string> = {
   under_review: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
 };
 
-const orderStatuses = ['open', 'paid', 'shipped', 'closed', 'cancelled'] as const;
+const orderStatuses = ['PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED'] as const;
 
 export default function Orders() {
   const { getUser } = useAuth();
@@ -165,11 +165,11 @@ export default function Orders() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="open">Ativo</SelectItem>
-            <SelectItem value="paid">Pago</SelectItem>
-            <SelectItem value="shipped">Enviado</SelectItem>
-            <SelectItem value="closed">Arquivado</SelectItem>
-            <SelectItem value="cancelled">Cancelado</SelectItem>
+            <SelectItem value="PENDING">Pendente</SelectItem>
+            <SelectItem value="PAID">Pago</SelectItem>
+            <SelectItem value="SHIPPED">Enviado</SelectItem>
+            <SelectItem value="DELIVERED">Entregue</SelectItem>
+            <SelectItem value="CANCELED">Cancelado</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -263,21 +263,21 @@ export default function Orders() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                disabled={order.status === 'paid'}
-                                onClick={() => updateMutation.mutate({ id: order.id, status: 'paid' })}
+                                disabled={order.status === 'PAID'}
+                                onClick={() => updateMutation.mutate({ id: order.id, status: 'PAID' })}
                               >
                                 Marcar como Pago
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                disabled={order.status === 'shipped'}
-                                onClick={() => updateMutation.mutate({ id: order.id, status: 'shipped' })}
+                                disabled={order.status === 'SHIPPED'}
+                                onClick={() => updateMutation.mutate({ id: order.id, status: 'SHIPPED' })}
                               >
                                 Marcar como Enviado
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive"
-                                disabled={order.status === 'cancelled'}
+                                disabled={order.status === 'CANCELED' || order.status === 'cancelled'}
                                 onClick={() => handleCancelClick(order.id)}
                               >
                                 Cancelar Pedido
