@@ -3,9 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, getFriendlyError } from "@/services/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useTableFilters } from "@/hooks/useTableFilters";
-import { useAuth } from "@/hooks/useAuth";
-import { isAdmin } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
+import { totalStock, sortProductsByStock } from "@/lib/stock";
 import { toast } from "sonner";
 import type { ProductVariant } from "@/types";
 
@@ -18,8 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import DataTablePagination from "@/components/DataTablePagination";
-import { Package, Search, ChevronDown, Plus, RefreshCw, AlertTriangle } from "lucide-react";
-import CreateProductModal from "@/components/CreateProductModal";
+import { Package, Search, ChevronDown, ChevronUp, RefreshCw, AlertTriangle } from "lucide-react";
 
 function StockIndicator({ quantity }: { quantity: number }) {
   if (quantity > 10) {
@@ -76,14 +74,10 @@ function DimensionsDisplay({ variant }: { variant: ProductVariant }) {
 const categories = ["Brincos", "Anéis", "Braceletes", "Chokers", "Conjuntos", "Pingentes", "Chaveiros", "Decoração", "Pulseiras", "Geral"];
 
 export default function Products() {
-  const { getUser } = useAuth();
-  const currentUser = getUser();
-  const admin = isAdmin(currentUser?.role);
   const qc = useQueryClient();
 
   const { page, limit, search, debouncedSearch, filter, setPage, changeSearch, changeLimit, changeFilter } = useTableFilters<{ category: string }>();
   const category = filter?.category ?? 'all';
-  const [modalOpen, setModalOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["products", page, limit, debouncedSearch, category],
@@ -112,13 +106,22 @@ export default function Products() {
     onError: (error: Error) => toast.error(`Falha ao sincronizar: ${getFriendlyError(error)}`),
   });
 
+  const [stockSort, setStockSort] = useState<'asc' | 'desc' | null>(null);
+
+  function toggleStockSort() {
+    setStockSort((prev) => (prev === null ? 'asc' : prev === 'asc' ? 'desc' : null));
+  }
+
   const sortedProducts = useMemo(() => {
     const productsArray = data?.products;
     if (!productsArray || !Array.isArray(productsArray)) return [];
+    if (stockSort) {
+      return sortProductsByStock(productsArray, stockSort);
+    }
     return [...productsArray].sort((a, b) => {
       return (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0);
     });
-  }, [data]);
+  }, [data, stockSort]);
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -184,12 +187,6 @@ export default function Products() {
             <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
             Sincronizar Nuvemshop
           </Button>
-          {admin ? (
-            <Button size="sm" onClick={() => setModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Novo Produto
-            </Button>
-          ) : null}
         </div>
       </div>
 
@@ -211,14 +208,8 @@ export default function Products() {
             <Package className="h-12 w-12 mb-4" />
             <p className="text-lg font-medium">Nenhum produto cadastrado</p>
             <p className="text-sm mb-4">
-              {hasFilters ? "Tente ajustar os filtros." : "Cadastre seu primeiro produto para começar."}
+              {hasFilters ? "Tente ajustar os filtros." : "Nenhum produto cadastrado ainda. Sincronize com a Nuvemshop para começar."}
             </p>
-            {admin && !hasFilters ? (
-              <Button onClick={() => setModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Novo Produto
-              </Button>
-            ) : null}
           </div>
         ) : (
           <div className="[&>div]:overflow-visible">
@@ -229,7 +220,21 @@ export default function Products() {
                   <TableHead>Nome do Produto</TableHead>
                   <TableHead className="w-[18%]">Categoria</TableHead>
                   <TableHead className="w-[13%]">Status</TableHead>
-                  <TableHead className="w-[11%]">Estoque Local</TableHead>
+                  <TableHead className="w-[11%]">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 hover:text-foreground"
+                      onClick={toggleStockSort}
+                      title={stockSort ? "Clique para limpar a ordenação" : "Clique para ordenar por estoque"}
+                    >
+                      Estoque Local
+                      {stockSort ? (
+                        stockSort === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+                      )}
+                    </button>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -276,7 +281,7 @@ export default function Products() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <StockIndicator quantity={product.variants?.reduce((sum, v) => sum + v.stock_quantity, 0) ?? 0} />
+                        <StockIndicator quantity={totalStock(product.variants)} />
                       </TableCell>
                     </TableRow>
                     {expandedRows.has(product.id) && (
@@ -357,12 +362,6 @@ export default function Products() {
           onLimitChange={changeLimit}
         />
       )}
-
-      <CreateProductModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSuccess={() => qc.invalidateQueries({ queryKey: ["products"] })}
-      />
     </div>
   );
 }
