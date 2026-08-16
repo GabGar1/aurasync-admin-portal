@@ -44,14 +44,16 @@ export default function Customers() {
         <p className="text-sm text-muted-foreground">Base de clientes cadastrada a partir dos pedidos</p>
       </div>
 
-      <div className="relative max-w-md shrink-0">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Pesquisar por nome ou email..."
-          className="pl-9"
-          value={search}
-          onChange={(e) => changeSearch(e.target.value)}
-        />
+      <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Pesquisar por nome ou email..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => changeSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       <div>
@@ -92,14 +94,18 @@ export default function Customers() {
             <TableBody>
               {customers.map((customer) => (
                 <TableRow key={customer.id} className="cursor-pointer" onClick={() => handleRowClick(customer)}>
-                  <TableCell className="font-medium truncate block">{customer.name}</TableCell>
-                  <TableCell className="truncate block text-sm text-muted-foreground">{customer.email ?? '-'}</TableCell>
+                  <TableCell>
+                    <div className="truncate font-medium">{customer.name}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="truncate text-sm text-muted-foreground">{customer.email ?? '-'}</div>
+                  </TableCell>
                   <TableCell>{customer.city ?? '-'}</TableCell>
                   <TableCell>{customer.province ?? '-'}</TableCell>
                   <TableCell className="text-right">{customer.order_count}</TableCell>
                   <TableCell className="text-right font-medium">{formatCurrency(customer.total_spent)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(customer.average_ticket)}</TableCell>
-                  <TableCell className="text-right">{formatDate(customer.last_purchase_at)}</TableCell>
+                  <TableCell className="text-right">{formatDate(customer.last_purchase_at ?? customer.first_purchase_at)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

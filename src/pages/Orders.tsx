@@ -239,7 +239,7 @@ export default function Orders() {
                     >
                       <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}</TableCell>
 <TableCell className="font-medium">
-  <span className="truncate block max-w-full">{order.customer_name}</span>
+  <div className="truncate max-w-full">{order.customer_name}</div>
 </TableCell>
                       <TableCell>{formatDate(order.created_at)}</TableCell>
                       <TableCell>
