@@ -12,6 +12,14 @@ export function formatDate(value: string | null | undefined): string {
   return new Date(value).toLocaleDateString('pt-BR');
 }
 
+export function formatDateOnly(value: string | null | undefined): string {
+  if (!value) return '-';
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+}
+
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return '-';
   return new Date(value).toLocaleString('pt-BR', {
@@ -29,7 +37,7 @@ export function formatTime(value: string | null | undefined): string {
 const paymentMethodLabels: Record<string, string> = {
   credit_card: 'Cartão de Crédito',
   debit_card: 'Cartão de Débito',
-  pix: 'PIX',
+  pix: 'Pix',
   boleto: 'Boleto',
   bank_transfer: 'Transferência bancária',
   cash: 'Dinheiro',
@@ -54,6 +62,9 @@ export const statusLabels: Record<string, string> = {
   CANCELED: 'Cancelado',
   refunded: 'Reembolsado',
   voided: 'Estornado',
+  DISPATCHED: 'Despachado',
+  UNPACKED: 'Empacotando',
+  MARKED_AS_FULFILLED: 'Marcado como Concluído',
 };
 
 export function statusLabel(status: string): string {
@@ -65,6 +76,9 @@ const typeLabels: Record<string, string> = {
   PERCENT: 'Percentual',
   PER_ORDER: 'Por pedido',
   MONTHLY: 'Mensal (controle)',
+  PACKAGING: 'Embalagem',
+  MONTHLY_FIXED: 'Mensal fixo',
+  MONTHLY_PERCENT: 'Mensal (%)',
 };
 
 export function typeLabel(type: string): string {
@@ -79,6 +93,8 @@ const categoryLabels: Record<string, string> = {
   OPERATIONAL: 'Operacional',
   MARKETING: 'Marketing',
   OTHER: 'Outros',
+  ACQUISITION: 'Custo de aquisição',
+  CREDIT_FEE: 'Taxa de crédito',
 };
 
 export function categoryLabel(category: string): string {
@@ -94,8 +110,19 @@ export function calculationBaseLabel(base: string): string {
   return calculationBaseLabels[base] ?? base;
 }
 
+const allocationBasisLabels: Record<string, string> = {
+  PER_ORDER: 'Por pedido',
+  PER_PRODUCT: 'Por produto vendido',
+};
+
+export function allocationBasisLabel(basis: string | null | undefined): string {
+  if (!basis) return '-';
+  return allocationBasisLabels[basis] ?? basis;
+}
+
 const storefrontLabels: Record<string, string> = {
-  mobile: 'Celular',
+  mobile: 'Mobile',
+  store: 'Site',
   web: 'Site',
   other_devices: 'Outros dispositivos',
 };
@@ -122,4 +149,75 @@ export function preferLabel(apiLabel: string | null | undefined, fallback: strin
 export function marginPercent(value: number | null | undefined): string {
   if (value === null || value === undefined) return '-';
   return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value)}%`;
+}
+
+const roleLabels: Record<string, string> = {
+  ADMIN: 'Admin',
+  EMPLOYEE: 'Funcionário',
+  SUPER_ADMIN: 'Super Admin',
+};
+
+export function roleLabel(role: string): string {
+  return roleLabels[role] ?? role;
+}
+
+const inventoryTypeLabels: Record<string, string> = {
+  SALE: 'Venda',
+  RESTOCK: 'Reabastecimento',
+  ADJUSTMENT: 'Ajuste manual',
+};
+
+export function inventoryTypeLabel(type: string): string {
+  return inventoryTypeLabels[type] ?? type;
+}
+
+export function capitalizeWords(value: string): string {
+  return value
+    .split(/[\s\-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+const utmSourceLabels: Record<string, string> = {
+  ig: 'Instagram',
+  fb: 'Facebook',
+  IGShopping: 'Instagram Shopping',
+  'nuvem-app': 'Nuvemshop App',
+  'chatgpt.com': 'Chat GPT',
+};
+
+export function utmSourceLabel(value: string | null | undefined): string {
+  if (!value || value === 'N/A') return 'Orgânico';
+  return utmSourceLabels[value] ?? capitalizeWords(value);
+}
+
+const utmMediumLabels: Record<string, string> = {
+  paid: 'Pago',
+  social: 'Social',
+  referral: 'Indicação',
+};
+
+export function utmMediumLabel(value: string | null | undefined): string {
+  if (!value || value === 'N/A') return 'Orgânico';
+  return utmMediumLabels[value] ?? capitalizeWords(value);
+}
+
+export interface OrderStatusLike {
+  status: string;
+  paid_at?: string | null;
+  shipped_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+}
+
+export function effectiveOrderStatus(order: OrderStatusLike): { key: string; label: string } {
+  if (order.status === 'CANCELED' || order.status === 'cancelled') {
+    return { key: 'cancelled', label: 'Cancelado' };
+  }
+  if (order.cancelled_at) return { key: 'cancelled', label: 'Cancelado' };
+  if (order.completed_at) return { key: 'delivered', label: 'Entregue' };
+  if (order.shipped_at) return { key: 'shipped', label: 'Enviado' };
+  if (order.paid_at) return { key: 'paid', label: 'Pago' };
+  return { key: order.status, label: statusLabel(order.status) };
 }

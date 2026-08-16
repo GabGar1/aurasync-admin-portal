@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Loader2, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
-import { costComponentsApi } from '@/services/api';
+import { costComponentsApi, getFriendlyError } from '@/services/api';
 import { formatCurrency, marginPercent } from '@/lib/formatters';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import VariantPicker, { type PickedVariant } from '@/components/VariantPicker';
-import type { CostSimulateResponse, ApiError } from '@/types';
+import type { CostSimulateResponse } from '@/types';
 
 interface Props {
   open: boolean;
@@ -30,7 +30,7 @@ export default function SimulateCostDialog({ open, onOpenChange }: Props) {
       unit_price: parseFloat(unitPrice) || 0,
       quantity: parseInt(quantity) || 1,
     }),
-    onError: (err: ApiError) => toast.error(`Falha ao simular: ${err?.response?.data?.error || err?.message}`),
+    onError: (err) => toast.error(`Falha ao simular: ${getFriendlyError(err)}`),
   });
 
   useEffect(() => {

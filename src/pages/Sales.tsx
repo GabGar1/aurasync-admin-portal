@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus, Trash2, Wallet, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { externalSalesApi } from '@/services/api';
+import { externalSalesApi, getFriendlyError } from '@/services/api';
 import { externalSaleSchema, type ExternalSaleFormValues } from '@/lib/schemas';
 import { paymentMethodLabel, statusLabel } from '@/lib/formatters';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,7 @@ import { isAdmin } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -19,7 +20,8 @@ import {
 import VariantPicker, { type PickedVariant } from '@/components/VariantPicker';
 import CustomerPicker from '@/components/sales/CustomerPicker';
 import SaleResultDialog from '@/components/sales/SaleResultDialog';
-import type { ExternalSaleResult, ApiError } from '@/types';
+import CreateCustomerDialog from '@/components/sales/CreateCustomerDialog';
+import type { ExternalSaleResult } from '@/types';
 
 const paymentMethods = ['credit_card', 'debit_card', 'pix', 'bank_transfer', 'boleto', 'cash'] as const;
 const saleStatuses = ['PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED'] as const;
@@ -41,6 +43,7 @@ export default function Sales() {
       payment_installments: undefined,
       shipping_cost_owner: undefined,
       shipping_cost_customer: undefined,
+      is_fair: false,
       status: 'PAID',
     },
   });
@@ -49,6 +52,7 @@ export default function Sales() {
   const [pickedVariants, setPickedVariants] = useState<(PickedVariant | null)[]>([null]);
   const [resultSale, setResultSale] = useState<ExternalSaleResult | null>(null);
   const [resultOpen, setResultOpen] = useState(false);
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
 
   function addItem() {
     append({ variant_id: '', quantity: 1, unit_price: 0 });
@@ -75,12 +79,13 @@ export default function Sales() {
         quantity: Number(item.quantity),
         unit_price: Number(item.unit_price),
       })),
-      discount_amount: payload.discount_amount === undefined || payload.discount_amount === '' ? undefined : Number(payload.discount_amount),
+      discount_amount: payload.discount_amount === undefined ? undefined : Number(payload.discount_amount),
       payment_method: payload.payment_method || undefined,
       gateway: payload.gateway?.trim() ? payload.gateway.trim() : undefined,
-      payment_installments: payload.payment_installments === undefined || payload.payment_installments === '' ? undefined : Number(payload.payment_installments),
-      shipping_cost_owner: payload.shipping_cost_owner === undefined || payload.shipping_cost_owner === '' ? undefined : Number(payload.shipping_cost_owner),
-      shipping_cost_customer: payload.shipping_cost_customer === undefined || payload.shipping_cost_customer === '' ? undefined : Number(payload.shipping_cost_customer),
+      payment_installments: payload.payment_installments === undefined ? undefined : Number(payload.payment_installments),
+      shipping_cost_owner: payload.shipping_cost_owner === undefined ? undefined : Number(payload.shipping_cost_owner),
+      shipping_cost_customer: payload.shipping_cost_customer === undefined ? undefined : Number(payload.shipping_cost_customer),
+      is_fair: payload.is_fair ?? false,
       status: payload.status,
     }),
     onSuccess: (sale) => {
@@ -97,13 +102,14 @@ export default function Sales() {
         payment_installments: undefined,
         shipping_cost_owner: undefined,
         shipping_cost_customer: undefined,
+        is_fair: false,
         status: 'PAID',
       });
       setPickedVariants([null]);
       qc.invalidateQueries({ queryKey: ['orders'] });
       qc.invalidateQueries({ queryKey: ['customers'] });
     },
-    onError: (err: ApiError) => toast.error(`Falha ao registrar venda: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`),
+    onError: (err) => toast.error(`Falha ao registrar venda: ${getFriendlyError(err)}`),
   });
 
   const customerEmail = form.watch('customer_email');
@@ -127,9 +133,15 @@ export default function Sales() {
         <p className="text-sm text-muted-foreground">Registrar venda externa fora da loja online</p>
       </div>
 
-      <form onSubmit={form.handleSubmit((values) => createMutation.mutate(values))} className="space-y-6 max-w-3xl">
-        <div className="space-y-4 border rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Cliente</h3>
+      <form onSubmit={form.handleSubmit((values) => createMutation.mutate(values))} className="w-full max-w-6xl space-y-6">
+        <div className="space-y-4 border-input rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Cliente</h3>
+            <Button type="button" variant="outline" size="sm" onClick={() => setCustomerDialogOpen(true)}>
+              <Plus className="h-3 w-3 mr-1" />
+              Adicionar cliente
+            </Button>
+          </div>
           <CustomerPicker
             onSelect={(customer) => {
               form.setValue('customer_name', customer.name);
@@ -168,7 +180,7 @@ export default function Sales() {
           ) : null}
         </div>
 
-        <div className="space-y-4 border rounded-lg p-4">
+        <div className="space-y-4 border-input rounded-lg p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Itens</h3>
             <Button type="button" variant="outline" size="sm" onClick={addItem}>
@@ -177,11 +189,14 @@ export default function Sales() {
             </Button>
           </div>
           {fields.map((field, index) => (
-            <div key={field.id} className="space-y-2 border rounded-md p-3">
-              <VariantPicker
-                value={pickedVariants[index] ?? null}
-                onSelect={(variant: PickedVariant) => selectVariant(index, variant)}
-              />
+            <div key={field.id} className="space-y-2 border-input rounded-md p-3">
+              <div className="space-y-2">
+                <Label>Produto</Label>
+                <VariantPicker
+                  value={pickedVariants[index] ?? null}
+                  onSelect={(variant: PickedVariant) => selectVariant(index, variant)}
+                />
+              </div>
               {form.formState.errors.items?.[index]?.variant_id ? (
                 <p className="text-sm text-destructive">{form.formState.errors.items[index].variant_id.message}</p>
               ) : null}
@@ -228,7 +243,7 @@ export default function Sales() {
           ) : null}
         </div>
 
-        <div className="space-y-4 border rounded-lg p-4">
+        <div className="space-y-4 border-input rounded-lg p-4">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pagamento e frete</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -278,6 +293,14 @@ export default function Sales() {
               <Input id="sale-shipping-customer" type="number" step="0.01" min="0" placeholder="0,00" {...form.register('shipping_cost_customer')} />
             </div>
           </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Switch
+              id="sale-is-fair"
+              checked={form.watch('is_fair') ?? false}
+              onCheckedChange={(checked) => form.setValue('is_fair', checked)}
+            />
+            <Label htmlFor="sale-is-fair" className="cursor-pointer">Venda de Feira</Label>
+          </div>
         </div>
 
         <Button type="submit" disabled={createMutation.isPending} className="w-full sm:w-auto">
@@ -285,6 +308,15 @@ export default function Sales() {
           Registrar Venda
         </Button>
       </form>
+
+      <CreateCustomerDialog
+        open={customerDialogOpen}
+        onOpenChange={setCustomerDialogOpen}
+        onCreated={(customer) => {
+          form.setValue('customer_name', customer.name);
+          form.setValue('customer_email', customer.email ?? '');
+        }}
+      />
 
       <SaleResultDialog open={resultOpen} onOpenChange={setResultOpen} sale={resultSale} />
     </div>

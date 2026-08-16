@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect, useCallback, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { productsApi } from "@/services/api";
+import { productsApi, getFriendlyError } from "@/services/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAuth } from "@/hooks/useAuth";
 import { isAdmin } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
 import { toast } from "sonner";
-import type { Product, ProductVariant, ApiError } from "@/types";
+import type { ProductVariant } from "@/types";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, Search, ChevronDown, ChevronLeft, ChevronRight, Plus, RefreshCw, AlertTriangle, Trash2 } from "lucide-react";
+import { Package, Search, ChevronDown, ChevronLeft, ChevronRight, Plus, RefreshCw, AlertTriangle } from "lucide-react";
 import CreateProductModal from "@/components/CreateProductModal";
 
 function StockIndicator({ quantity }: { quantity: number }) {
@@ -51,7 +47,7 @@ function StockIndicator({ quantity }: { quantity: number }) {
 }
 
 function DimensionsDisplay({ variant }: { variant: ProductVariant }) {
-  const v = variant as Record<string, unknown>;
+  const v = variant as unknown as Record<string, unknown>;
   const weight = v.weight as number | null | undefined;
   const height = v.height as number | null | undefined;
   const width = v.width as number | null | undefined;
@@ -90,9 +86,6 @@ export default function Products() {
   const [category, setCategory] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
-
   const debouncedSearch = useDebounce(search, 500);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -119,18 +112,7 @@ export default function Products() {
       toast.success(`Sincronização concluída! ${res.processed || 0} produtos atualizados.`);
       qc.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (error: Error) => toast.error(`Falha ao sincronizar: ${error.message}`),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => productsApi.delete(id),
-    onSuccess: () => {
-      toast.success("Produto excluído com sucesso");
-      qc.invalidateQueries({ queryKey: ["products"] });
-    },
-    onError: (err: ApiError) => toast.error(
-      `Falha ao excluir: ${err?.response?.data?.error || err?.message || "Erro desconhecido"}`,
-    ),
+    onError: (error: Error) => toast.error(`Falha ao sincronizar: ${getFriendlyError(error)}`),
   });
 
   const sortedProducts = useMemo(() => {
@@ -158,19 +140,6 @@ export default function Products() {
       else next.add(id);
       return next;
     });
-  }
-
-  function handleDeleteClick(product: Product) {
-    setDeletingProduct(product);
-    setDeleteDialogOpen(true);
-  }
-
-  function confirmDelete() {
-    if (deletingProduct) {
-      deleteMutation.mutate(deletingProduct.id);
-    }
-    setDeleteDialogOpen(false);
-    setDeletingProduct(null);
   }
 
   const products = sortedProducts;
@@ -263,8 +232,7 @@ export default function Products() {
                   <TableHead>Nome do Produto</TableHead>
                   <TableHead className="w-[18%]">Categoria</TableHead>
                   <TableHead className="w-[13%]">Status</TableHead>
-                  <TableHead className="w-[11%]">Variações</TableHead>
-                  {admin ? <TableHead className="w-[8%] text-center">Ações</TableHead> : null}
+                  <TableHead className="w-[11%]">Estoque Local</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -279,7 +247,6 @@ export default function Products() {
                       <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                      {admin ? <TableCell><Skeleton className="h-8 w-16 mx-auto" /></TableCell> : null}
                     </TableRow>
                   ))
                 ) : (
@@ -311,34 +278,18 @@ export default function Products() {
                           {product.is_active ? "Ativo" : "Inativo"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {product.variants?.length || 0}
+                      <TableCell>
+                        <StockIndicator quantity={product.variants?.reduce((sum, v) => sum + v.stock_quantity, 0) ?? 0} />
                       </TableCell>
-                      {admin ? (
-                        <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(product);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      ) : null}
                     </TableRow>
                     {expandedRows.has(product.id) && (
                       product.variants && product.variants.length > 0 ? (
                         <TableRow key={`${product.id}-variants`} className="hover:bg-accent/20">
-                          <TableCell colSpan={admin ? 6 : 5} className="p-0">
+                          <TableCell colSpan={5} className="p-0">
                             <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
                               <table className="w-full table-fixed text-sm">
                                 <thead>
                                   <tr className="border-b">
-                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[140px]">ID Variante</th>
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nome</th>
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[100px]">SKU</th>
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[110px]">Preço</th>
@@ -349,9 +300,6 @@ export default function Products() {
                                 <tbody>
                                   {product.variants.map((variant) => (
                                     <tr key={variant.id} className="border-b last:border-0">
-                                      <td className="p-4 align-middle font-mono text-[11px] text-muted-foreground">
-                                        {variant.id}
-                                      </td>
                                       <td className="p-4 align-middle font-medium text-muted-foreground">
                                         {variant.name || "Padrão"}
                                       </td>
@@ -387,7 +335,7 @@ export default function Products() {
                         </TableRow>
                       ) : (
                         <TableRow key={`${product.id}-novariants`} className="hover:bg-accent/20">
-                          <TableCell colSpan={admin ? 6 : 5} className="p-0">
+                          <TableCell colSpan={5} className="p-0">
                             <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-200">
                               Nenhuma variação cadastrada
                             </div>
@@ -451,26 +399,6 @@ export default function Products() {
         onClose={() => setModalOpen(false)}
         onSuccess={() => qc.invalidateQueries({ queryKey: ["products"] })}
       />
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir "{deletingProduct?.name}"? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

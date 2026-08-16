@@ -6,7 +6,11 @@ import type {
   User, CreateUserPayload, UpdateUserPayload, GetUsersResponse,
   OrdersResponse, MarketingResponse, StockResponse, UserStats,
   CostComponent, CostComponentPayload, CostAssociation, CostSimulateInput, CostSimulateResponse,
-  ExternalSalePayload, ExternalSaleResult, Customer, CustomerDetail, CustomerOrder, GetCustomersResponse,
+  ExternalSalePayload, ExternalSaleResult, CreateCustomerPayload,
+  Customer, CustomerDetail, CustomerOrder, GetCustomersResponse,
+  ProductSubgroup, ProductSubgroupPayload, SubgroupAssociation,
+  CreditFeeTier, CreditFeeTierUpdate,
+  CostClosingInput, CostClosingResponse,
 } from '@/types';
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3333/api';
@@ -206,12 +210,88 @@ export const costComponentsApi = {
     return response.data;
   },
 
+  associateSubgroup: async (payload: { subgroup_id: string; cost_component_id: string; quantity: number }): Promise<SubgroupAssociation> => {
+    const response = await api.post<SubgroupAssociation>('/cost-components/associate-subgroup', payload);
+    return response.data;
+  },
+
+  associateSubgroupBatch: async (payload: { subgroup_id: string; cost_component_ids: string[]; quantity: number }): Promise<{ subgroup_id: string; associations: SubgroupAssociation[] }> => {
+    const response = await api.post<{ subgroup_id: string; associations: SubgroupAssociation[] }>('/cost-components/associate-subgroup-batch', payload);
+    return response.data;
+  },
+
+  removeSubgroupAssociations: async (payload: { subgroup_id: string; cost_component_ids: string[] }): Promise<void> => {
+    await api.delete('/cost-components/associate-subgroup-batch', { data: payload });
+  },
+
+  getBySubgroup: async (subgroupId: string): Promise<{ associations: SubgroupAssociation[] }> => {
+    const response = await api.get<{ associations: SubgroupAssociation[] }>(`/cost-components/subgroup/${subgroupId}`);
+    return response.data;
+  },
+
+  associateBatch: async (payload: { cost_component_id: string; product_ids?: string[]; subgroup_ids?: string[]; quantity: number }): Promise<{ product: { product_id: string }[]; subgroup: { subgroup_id: string }[] }> => {
+    const response = await api.post<{ product: { product_id: string }[]; subgroup: { subgroup_id: string }[] }>('/cost-components/associate-batch', payload);
+    return response.data;
+  },
+
+  associateProductBatch: async (payload: { product_id: string; cost_component_ids: string[]; quantity: number }): Promise<{ product_id: string; associations: CostAssociation[] }> => {
+    const response = await api.post<{ product_id: string; associations: CostAssociation[] }>('/cost-components/associate-product-batch', payload);
+    return response.data;
+  },
+
   removeAssociation: async (associationId: string): Promise<void> => {
     await api.delete(`/cost-components/associate/${associationId}`);
   },
 
   simulate: async (payload: CostSimulateInput): Promise<CostSimulateResponse> => {
     const response = await api.post<CostSimulateResponse>('/cost-components/simulate', payload);
+    return response.data;
+  },
+};
+
+export const productSubgroupsApi = {
+  list: async (params?: { is_active?: boolean; search?: string }): Promise<ProductSubgroup[]> => {
+    const response = await api.get<ProductSubgroup[]>('/product-subgroups', { params });
+    return response.data;
+  },
+  create: async (payload: ProductSubgroupPayload): Promise<ProductSubgroup> => {
+    const response = await api.post<ProductSubgroup>('/product-subgroups', payload);
+    return response.data;
+  },
+  update: async (id: string, payload: Partial<ProductSubgroupPayload>): Promise<ProductSubgroup> => {
+    const response = await api.put<ProductSubgroup>(`/product-subgroups/${id}`, payload);
+    return response.data;
+  },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/product-subgroups/${id}`);
+  },
+  assignProducts: async (id: string, product_ids: string[]): Promise<{ assigned: number }> => {
+    const response = await api.post<{ assigned: number }>(`/product-subgroups/${id}/products`, { product_ids });
+    return response.data;
+  },
+  listProducts: async (id: string, params?: { page?: number; limit?: number; search?: string }): Promise<GetProductsResponse> => {
+    const response = await api.get<GetProductsResponse>(`/product-subgroups/${id}/products`, { params });
+    return response.data;
+  },
+  unassignProduct: async (id: string, productId: string): Promise<void> => {
+    await api.delete(`/product-subgroups/${id}/products/${productId}`);
+  },
+};
+
+export const creditFeeTiersApi = {
+  list: async (): Promise<CreditFeeTier[]> => {
+    const response = await api.get<CreditFeeTier[]>('/credit-fee-tiers');
+    return response.data;
+  },
+  update: async (id: string, payload: CreditFeeTierUpdate): Promise<CreditFeeTier> => {
+    const response = await api.put<CreditFeeTier>(`/credit-fee-tiers/${id}`, payload);
+    return response.data;
+  },
+};
+
+export const costClosingApi = {
+  close: async (payload: CostClosingInput): Promise<CostClosingResponse> => {
+    const response = await api.post<CostClosingResponse>('/cost-closing', payload);
     return response.data;
   },
 };
@@ -243,6 +323,44 @@ export const customersApi = {
     const response = await api.get<CustomerOrder[]>(`/customers/${id}/orders`);
     return response.data;
   },
+
+  create: async (payload: CreateCustomerPayload): Promise<Customer> => {
+    const response = await api.post<Customer>('/customers', payload);
+    return response.data;
+  },
 };
 
 export default api;
+
+const errorTranslations: Record<string, string> = {
+  'Invalid email or password': 'Email ou senha inválidos',
+  'User not found': 'Usuário não encontrado',
+  'Product not found': 'Produto não encontrado',
+  'Email already registered': 'Email já cadastrado',
+  'A product with this slug already exists': 'Já existe um produto com este slug',
+  'A product with this new slug already exists': 'Já existe um produto com este slug',
+  'Failed to change password': 'Falha ao alterar a senha',
+  'Unauthorized': 'Não autorizado',
+  'Session cookie not found. Use cookie-based auth.': 'Sessão expirada. Faça login novamente.',
+};
+
+interface ErrorShape {
+  response?: { data?: { error?: unknown } };
+  message?: unknown;
+}
+
+function readErrorMessage(err: unknown): string | undefined {
+  if (typeof err === 'string') return err || undefined;
+  if (!err || typeof err !== 'object') return undefined;
+  const candidate = err as ErrorShape;
+  const fromResponse = candidate.response?.data?.error;
+  if (typeof fromResponse === 'string' && fromResponse) return fromResponse;
+  if (typeof candidate.message === 'string' && candidate.message) return candidate.message;
+  return undefined;
+}
+
+export function getFriendlyError(err: unknown): string {
+  const raw = readErrorMessage(err);
+  if (!raw) return 'Erro desconhecido';
+  return errorTranslations[raw] ?? raw;
+}

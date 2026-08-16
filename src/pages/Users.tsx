@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Search, Plus, MoreHorizontal, AlertTriangle, UsersIcon, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usersApi } from '@/services/api';
-import type { User, CreateUserPayload, UpdateUserPayload, GetUsersResponse, ApiError } from '@/types';
+import { usersApi, getFriendlyError } from '@/services/api';
+import type { User, CreateUserPayload, UpdateUserPayload, GetUsersResponse } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
-import { formatDate } from '@/lib/formatters';
+import { formatDate, roleLabel } from '@/lib/formatters';
 import { toast } from 'sonner';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,12 +23,12 @@ import { Label } from '@/components/ui/label';
 
 function RoleBadge({ role }: { role: string }) {
   if (role === 'ADMIN') {
-    return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">{role}</Badge>;
+    return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">{roleLabel(role)}</Badge>;
   }
   if (role === 'SUPER_ADMIN') {
-    return <Badge variant="outline" className="text-purple-700 border-purple-300">{role}</Badge>;
+    return <Badge variant="outline" className="text-purple-700 border-purple-300">{roleLabel(role)}</Badge>;
   }
-  return <Badge variant="secondary">{role}</Badge>;
+  return <Badge variant="secondary">{roleLabel(role)}</Badge>;
 }
 
 function StatusDisplay({ status }: { status: boolean }) {
@@ -76,8 +76,8 @@ export default function Users() {
       qc.invalidateQueries({ queryKey: ['users'] });
       setCreateDialogOpen(false);
     },
-    onError: (err: ApiError) => toast.error(
-      `Falha ao criar: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`
+    onError: (err) => toast.error(
+      `Falha ao criar: ${getFriendlyError(err)}`
     ),
   });
 
@@ -90,8 +90,8 @@ export default function Users() {
       setEditDialogOpen(false);
       setEditingUser(null);
     },
-    onError: (err: ApiError) => toast.error(
-      `Falha ao atualizar: ${err?.response?.data?.error || err?.message}`
+    onError: (err) => toast.error(
+      `Falha ao atualizar: ${getFriendlyError(err)}`
     ),
   });
 
@@ -103,8 +103,8 @@ export default function Users() {
       setDeleteDialogOpen(false);
       setDeletingUser(null);
     },
-    onError: (err: ApiError) => toast.error(
-      `Falha ao remover: ${err?.response?.data?.error || err?.message}`
+    onError: (err) => toast.error(
+      `Falha ao remover: ${getFriendlyError(err)}`
     ),
   });
 
@@ -163,9 +163,9 @@ export default function Users() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as Funções</SelectItem>
-            <SelectItem value="ADMIN">ADMIN</SelectItem>
-            <SelectItem value="EMPLOYEE">EMPLOYEE</SelectItem>
-            <SelectItem value="SUPER_ADMIN">SUPER_ADMIN</SelectItem>
+            <SelectItem value="ADMIN">Admin</SelectItem>
+            <SelectItem value="EMPLOYEE">Funcionário</SelectItem>
+            <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -200,7 +200,7 @@ export default function Users() {
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Função</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Criado em</TableHead>
                 {admin && <TableHead className="w-[80px] text-center">Ações</TableHead>}

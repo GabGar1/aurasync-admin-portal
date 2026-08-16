@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Lock, LogIn, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { authApi } from "@/services/api";
+import { authApi, getFriendlyError } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { AxiosError } from "axios";
+import type { LoginPayload } from "@/types";
 
 const loginSchema = z.object({
   email: z.string().email("Informe um email válido"),
@@ -30,7 +31,7 @@ export default function Login() {
   });
 
   const mutation = useMutation({
-    mutationFn: (payload: LoginForm) => authApi.login(payload),
+    mutationFn: (payload: LoginForm) => authApi.login(payload as LoginPayload),
     onSuccess: (data) => {
       toast.success("Bem-vindo de volta!");
       login(data.token, data.user);
@@ -40,8 +41,7 @@ export default function Login() {
       form.clearErrors("root");
       if (error instanceof AxiosError) {
         if (error.response?.status === 401) {
-          const message = (error.response.data as { error?: string })?.error || "Email ou senha inválidos";
-          form.setError("root", { message });
+          form.setError("root", { message: getFriendlyError(error) });
         } else if (!error.response) {
           form.setError("root", { message: "Erro de conexão. Verifique sua internet." });
         } else {

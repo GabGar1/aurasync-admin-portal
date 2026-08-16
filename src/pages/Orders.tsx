@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react';
 import { Search, RefreshCw, ShoppingCart, MoreHorizontal, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersApi } from '@/services/api';
+import { ordersApi, getFriendlyError } from '@/services/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
-import { formatCurrency, formatDate, statusLabel, preferLabel, sourceLabel, storefrontLabel, paymentMethodLabel } from '@/lib/formatters';
+import { formatCurrency, formatDate, statusLabel, sourceLabel, storefrontLabel, paymentMethodLabel, effectiveOrderStatus, utmSourceLabel, utmMediumLabel, capitalizeWords } from '@/lib/formatters';
 import { toast } from 'sonner';
-import type { Order, GetOrdersResponse, ApiError } from '@/types';
+import type { Order, GetOrdersResponse } from '@/types';
 import type { UseMutationResult } from '@tanstack/react-query';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -37,6 +37,7 @@ const statusBadgeClass: Record<string, string> = {
   paid: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
   shipped: 'bg-orange-100 text-orange-800 hover:bg-orange-100 border-transparent',
   closed: 'bg-cyan-100 text-cyan-800 hover:bg-cyan-100 border-transparent',
+  delivered: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
   cancelled: '',
 };
 
@@ -93,8 +94,8 @@ export default function Orders() {
       toast.success('Status atualizado');
       qc.invalidateQueries({ queryKey: ['orders'] });
     },
-    onError: (err: ApiError) => toast.error(
-      `Falha ao atualizar: ${err?.response?.data?.error || err?.message}`
+    onError: (err) => toast.error(
+      `Falha ao atualizar: ${getFriendlyError(err)}`
     ),
   });
 
@@ -104,8 +105,8 @@ export default function Orders() {
       toast.success('Pedido cancelado');
       qc.invalidateQueries({ queryKey: ['orders'] });
     },
-    onError: (err: ApiError) => toast.error(
-      `Falha ao cancelar: ${err?.response?.data?.error || err?.message}`
+    onError: (err) => toast.error(
+      `Falha ao cancelar: ${getFriendlyError(err)}`
     ),
   });
 
@@ -115,8 +116,8 @@ export default function Orders() {
       toast.success('Sincronização de pedidos iniciada em segundo plano. A lista será atualizada automaticamente.');
       qc.invalidateQueries({ queryKey: ['orders'] });
     },
-    onError: (err: ApiError) => toast.error(
-      `Falha ao sincronizar: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`
+    onError: (err) => toast.error(
+      `Falha ao sincronizar: ${getFriendlyError(err)}`
     ),
   });
 
@@ -245,9 +246,14 @@ export default function Orders() {
 </TableCell>
                       <TableCell>{formatDate(order.created_at)}</TableCell>
                       <TableCell>
-                        <Badge className={statusBadgeClass[order.status] || ''} variant={order.status === 'cancelled' ? 'destructive' : 'default'}>
-                          {statusLabel(order.status)}
-                        </Badge>
+                        {(() => {
+                          const effective = effectiveOrderStatus(order);
+                          return (
+                            <Badge className={statusBadgeClass[effective.key] || ''} variant={effective.key === 'cancelled' ? 'destructive' : 'default'}>
+                              {effective.label}
+                            </Badge>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-right font-medium">{formatCurrency(order.total_amount)}</TableCell>
                       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
@@ -343,9 +349,14 @@ export default function Orders() {
                 <SheetTitle>Pedido #{selectedOrder.id.slice(0, 8)}</SheetTitle>
                 <SheetDescription>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <Badge className={statusBadgeClass[selectedOrder.status] || ''} variant={selectedOrder.status === 'cancelled' || selectedOrder.status === 'CANCELED' ? 'destructive' : 'default'}>
-                      {preferLabel(selectedOrder.status_label, statusLabel(selectedOrder.status))}
-                    </Badge>
+                    {(() => {
+                      const effective = effectiveOrderStatus(selectedOrder);
+                      return (
+                        <Badge className={statusBadgeClass[effective.key] || ''} variant={effective.key === 'cancelled' ? 'destructive' : 'default'}>
+                          {effective.label}
+                        </Badge>
+                      );
+                    })()}
                     {selectedOrder.commercial_status ? (
                       <Badge variant="secondary">{selectedOrder.commercial_status}</Badge>
                     ) : null}
@@ -416,11 +427,11 @@ export default function Orders() {
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">UTMs</h3>
                   {selectedOrder.utm_source || selectedOrder.utm_medium || selectedOrder.utm_campaign || selectedOrder.utm_content || selectedOrder.utm_term ? (
                     <div className="space-y-1 text-sm">
-                      {selectedOrder.utm_source ? <p>Source: {selectedOrder.utm_source}</p> : null}
-                      {selectedOrder.utm_medium ? <p>Medium: {selectedOrder.utm_medium}</p> : null}
-                      {selectedOrder.utm_campaign ? <p>Campanha: {selectedOrder.utm_campaign}</p> : null}
-                      {selectedOrder.utm_content ? <p>Conteúdo: {selectedOrder.utm_content}</p> : null}
-                      {selectedOrder.utm_term ? <p>Termo: {selectedOrder.utm_term}</p> : null}
+                      {selectedOrder.utm_source ? <p><span className="text-muted-foreground">Fonte: </span>{utmSourceLabel(selectedOrder.utm_source)}</p> : null}
+                      {selectedOrder.utm_medium ? <p><span className="text-muted-foreground">Mídia: </span>{utmMediumLabel(selectedOrder.utm_medium)}</p> : null}
+                      {selectedOrder.utm_campaign ? <p><span className="text-muted-foreground">Campanha: </span>{capitalizeWords(selectedOrder.utm_campaign)}</p> : null}
+                      {selectedOrder.utm_content ? <p><span className="text-muted-foreground">Conteúdo: </span>{capitalizeWords(selectedOrder.utm_content)}</p> : null}
+                      {selectedOrder.utm_term ? <p><span className="text-muted-foreground">Termo: </span>{capitalizeWords(selectedOrder.utm_term)}</p> : null}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">Nenhuma UTM registrada</p>

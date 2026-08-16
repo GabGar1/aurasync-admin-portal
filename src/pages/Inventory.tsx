@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Plus, AlertTriangle, Database, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { inventoryApi } from '@/services/api';
-import type { CreateInventoryPayload, GetInventoryResponse, ApiError } from '@/types';
+import { inventoryApi, getFriendlyError } from '@/services/api';
+import type { CreateInventoryPayload, GetInventoryResponse } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
-import { formatDate } from '@/lib/formatters';
+import { formatDate, inventoryTypeLabel } from '@/lib/formatters';
 import { toast } from 'sonner';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -47,8 +47,8 @@ export default function Inventory() {
       qc.invalidateQueries({ queryKey: ['inventory'] });
       setDialogOpen(false);
     },
-    onError: (err: ApiError) => toast.error(
-      `Falha ao registrar: ${err?.response?.data?.error || err?.message || 'Erro desconhecido'}`
+    onError: (err) => toast.error(
+      `Falha ao registrar: ${getFriendlyError(err)}`
     ),
   });
 
@@ -96,10 +96,10 @@ export default function Inventory() {
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead>Data</TableHead>
-                <TableHead>Variant ID</TableHead>
+                <TableHead>ID da Variação</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead className="text-right">Quantidade</TableHead>
-                <TableHead>Pedido ID</TableHead>
+                <TableHead>ID do Pedido</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,7 +120,7 @@ export default function Inventory() {
                     <TableCell className="font-mono text-xs">{t.variant_id}</TableCell>
                     <TableCell>
                       <Badge className={typeBadgeClass[t.type]} variant="secondary">
-                        {t.type}
+                        {inventoryTypeLabel(t.type)}
                       </Badge>
                     </TableCell>
                     <TableCell className={`text-right font-semibold ${t.quantity_changed < 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -185,11 +185,11 @@ function CreateInventoryForm({ onSubmit, isPending }: { onSubmit: (payload: Crea
 
     const numQuantity = Number(quantity);
     if (type === 'SALE' && numQuantity >= 0) {
-      toast.error('SALE deve ter quantidade negativa');
+      toast.error('Venda deve ter quantidade negativa');
       return;
     }
     if (type === 'RESTOCK' && numQuantity <= 0) {
-      toast.error('RESTOCK deve ter quantidade positiva');
+      toast.error('Reabastecimento deve ter quantidade positiva');
       return;
     }
 
@@ -204,7 +204,7 @@ function CreateInventoryForm({ onSubmit, isPending }: { onSubmit: (payload: Crea
   return (
     <form onSubmit={handleSubmit} className="space-y-4 py-4">
       <div className="space-y-2">
-        <Label htmlFor="variant_id">Variant ID</Label>
+        <Label htmlFor="variant_id">ID da Variação</Label>
         <Input
           id="variant_id"
           placeholder="ID da variação"
@@ -220,9 +220,9 @@ function CreateInventoryForm({ onSubmit, isPending }: { onSubmit: (payload: Crea
             <SelectValue placeholder="Selecione o tipo" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="SALE">SALE (Venda — negativo)</SelectItem>
-            <SelectItem value="RESTOCK">RESTOCK (Reabastecimento — positivo)</SelectItem>
-            <SelectItem value="ADJUSTMENT">ADJUSTMENT (Ajuste manual)</SelectItem>
+            <SelectItem value="SALE">Venda (negativo)</SelectItem>
+            <SelectItem value="RESTOCK">Reabastecimento (positivo)</SelectItem>
+            <SelectItem value="ADJUSTMENT">Ajuste manual</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -238,12 +238,12 @@ function CreateInventoryForm({ onSubmit, isPending }: { onSubmit: (payload: Crea
         />
         {type && (
           <p className="text-xs text-muted-foreground">
-            {type === 'SALE' ? 'Use valor negativo para SALE' : type === 'RESTOCK' ? 'Use valor positivo para RESTOCK' : 'Pode ser positivo ou negativo'}
+            {type === 'SALE' ? 'Use valor negativo para venda' : type === 'RESTOCK' ? 'Use valor positivo para reabastecimento' : 'Pode ser positivo ou negativo'}
           </p>
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="order_id">Order ID (opcional)</Label>
+        <Label htmlFor="order_id">ID do Pedido (opcional)</Label>
         <Input
           id="order_id"
           placeholder="ID do pedido relacionado"

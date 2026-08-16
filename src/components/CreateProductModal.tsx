@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { productsApi } from "@/services/api";
+import { productsApi, getFriendlyError } from "@/services/api";
 import type { CreateProductPayload } from "@/types";
 import { toast } from "sonner";
 
@@ -74,8 +74,7 @@ export default function CreateProductModal({ open, onClose, onSuccess }: Props) 
       resetForm();
       onClose();
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string } }; message?: string };
-      toast.error(error?.response?.data?.error || error?.message || "Erro ao criar produto");
+      toast.error(getFriendlyError(err));
     } finally {
       setLoading(false);
     }
