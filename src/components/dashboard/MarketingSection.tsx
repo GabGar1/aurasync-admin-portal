@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, storefrontLabel, paymentMethodLabel, utmSourceLabel, utmMediumLabel } from '@/lib/formatters';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import type { MarketingResponse } from '@/types';
 
@@ -15,6 +15,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
   const campaignTotalRevenue = data?.by_campaign?.reduce((s, c) => s + c.revenue, 0) ?? 0;
   const campaignTotalOrders = data?.by_campaign?.reduce((s, c) => s + c.orders, 0) ?? 0;
   const overallAOV = campaignTotalOrders > 0 ? campaignTotalRevenue / campaignTotalOrders : 0;
+  const storefrontData = (data?.by_storefront ?? []).map((s) => ({ ...s, storefront: storefrontLabel(s.storefront) }));
 
   return (
     <div className="space-y-6">
@@ -24,9 +25,9 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
         <Card>
           <CardHeader><CardTitle>Vendas por Loja</CardTitle></CardHeader>
           <CardContent>
-            {isLoading ? <Skeleton className="h-[200px]" /> : !data?.by_storefront?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
-              <ResponsiveContainer width="100%" height={Math.max(200, data.by_storefront.length * 40)}>
-                <BarChart data={data.by_storefront} layout="vertical" margin={{ left: 80 }}>
+            {isLoading ? <Skeleton className="h-[200px]" /> : !storefrontData.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
+              <ResponsiveContainer width="100%" height={Math.max(200, storefrontData.length * 40)}>
+                <BarChart data={storefrontData} layout="vertical" margin={{ left: 80 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis type="category" dataKey="storefront" width={70} tick={{ fontSize: 12 }} />
@@ -42,27 +43,58 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
         <Card>
           <CardHeader><CardTitle>Métodos de Pagamento</CardTitle></CardHeader>
           <CardContent>
-            {isLoading ? <Skeleton className="h-[200px]" /> : !data?.by_payment_method?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={data.by_payment_method} dataKey="orders" nameKey="method" cx="50%" cy="50%" outerRadius={80} innerRadius={50} label={({ method }) => method || 'N/A'}>
-                    {data.by_payment_method.map((entry, i) => (
-                      <Cell key={i} fill={`hsl(${i * 60}, 60%, 60%)`} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+            {isLoading ? <Skeleton className="h-[220px]" /> : !data?.by_payment_method?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
+              (() => {
+                const total = data.by_payment_method.reduce((s, e) => s + e.orders, 0);
+                return (
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <ResponsiveContainer width="55%" height={220}>
+                      <PieChart>
+                        <Pie
+                          data={data.by_payment_method}
+                          dataKey="orders"
+                          nameKey="method"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          innerRadius={50}
+                        >
+                          {data.by_payment_method.map((entry, i) => (
+                            <Cell key={i} fill={`hsl(${i * 60}, 60%, 60%)`} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value: number, name: string) => [`${value} pedidos`, paymentMethodLabel(name)]} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <ul className="flex-1 w-full space-y-2 max-h-[220px] overflow-y-auto">
+                      {data.by_payment_method.map((entry, i) => {
+                        const pct = total > 0 ? (entry.orders / total) * 100 : 0;
+                        return (
+                          <li key={i} className="flex items-center justify-between gap-3 text-sm">
+                            <span className="flex items-center gap-2 min-w-0">
+                              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: `hsl(${i * 60}, 60%, 60%)` }} />
+                              <span className="truncate">{paymentMethodLabel(entry.method)}</span>
+                            </span>
+                            <span className="text-muted-foreground shrink-0 tabular-nums">
+                              {entry.orders} ({pct.toFixed(1).replace('.', ',')}%)
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                );
+              })()
             )}
           </CardContent>
         </Card>
 
         {/* Campaigns */}
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader><CardTitle>Campanhas</CardTitle></CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 min-h-0">
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.by_campaign?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
-              <div className="max-h-[300px] overflow-y-auto">
+              <div className="h-full max-h-[300px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -106,8 +138,8 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
                   <TableBody>
                     {[...data.by_source].sort((a, b) => b.revenue - a.revenue).map((src, i) => (
                       <TableRow key={i}>
-                        <TableCell>{src.source || 'N/A'}</TableCell>
-                        <TableCell>{src.medium || 'N/A'}</TableCell>
+                        <TableCell>{utmSourceLabel(src.source)}</TableCell>
+                        <TableCell>{utmMediumLabel(src.medium)}</TableCell>
                         <TableCell className="text-right">{src.orders}</TableCell>
                         <TableCell className="text-right">{formatCurrency(src.revenue)}</TableCell>
                       </TableRow>
@@ -121,14 +153,14 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
 
         {/* Provinces */}
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Vendas por Província</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Vendas por Estado</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.by_province?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
               <div className="max-h-[300px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Província</TableHead>
+                      <TableHead>Estado</TableHead>
                       <TableHead className="text-right">Pedidos</TableHead>
                       <TableHead className="text-right">Receita</TableHead>
                     </TableRow>
