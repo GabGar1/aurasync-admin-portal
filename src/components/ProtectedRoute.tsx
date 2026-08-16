@@ -1,7 +1,19 @@
 import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { isAdmin } from '@/lib/utils';
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem('aurasync_token');
-  if (!token) return <Navigate to="/login" replace />;
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  adminOnly?: boolean;
+}
+
+export default function ProtectedRoute({ children, adminOnly = false }: ProtectedRouteProps) {
+  const { isAuthenticated, getUser } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  if (adminOnly && !isAdmin(getUser()?.role)) {
+    return <Navigate to="/products" replace />;
+  }
   return <>{children}</>;
 }

@@ -1,265 +1,369 @@
-import {useState, useMemo, useEffect} from 'react';
-import { Table, Button, Tag, Modal, Form, Input, Select, Space, message, Card, Row, Col } from 'antd';
-import { PlusOutlined, SyncOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { productsApi } from '@/services/api';
-import type { Product, ProductVariant } from '@/types';
-import { useWebSocket } from "@/hooks/useWebSocket.ts";
-import CreateProductModal from "@/components/CreateProductModal.tsx";
+import { useState, useMemo, useEffect, useCallback, Fragment } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { productsApi, getFriendlyError } from "@/services/api";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { useTableFilters } from "@/hooks/useTableFilters";
+import { formatCurrency } from "@/lib/formatters";
+import { totalStock, sortProductsByStock } from "@/lib/stock";
+import { toast } from "sonner";
+import type { ProductVariant } from "@/types";
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import DataTablePagination from "@/components/DataTablePagination";
+import { Package, Search, ChevronDown, ChevronUp, RefreshCw, AlertTriangle } from "lucide-react";
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
+function StockIndicator({ quantity }: { quantity: number }) {
+  if (quantity > 10) {
+    return (
+      <span className="text-green-600 font-medium flex items-center gap-1">
+        <span className="h-2 w-2 rounded-full bg-green-600" />
+        {quantity}
+      </span>
+    );
+  }
+  if (quantity >= 5) {
+    return (
+      <span className="text-amber-600 font-medium flex items-center gap-1">
+        <span className="h-2 w-2 rounded-full bg-amber-600" />
+        {quantity}
+      </span>
+    );
+  }
+  return (
+    <span className="text-red-600 font-semibold flex items-center gap-1">
+      <span className="h-2 w-2 rounded-full bg-red-600" />
+      {quantity}
+      <Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1.5">Repor</Badge>
+    </span>
+  );
 }
 
+function DimensionsDisplay({ variant }: { variant: ProductVariant }) {
+  const v = variant as unknown as Record<string, unknown>;
+  const weight = v.weight as number | null | undefined;
+  const height = v.height as number | null | undefined;
+  const width = v.width as number | null | undefined;
+  const depth = v.depth as number | null | undefined;
+
+  const hasDimensions = weight != null || height != null || width != null || depth != null;
+  if (!hasDimensions) return <span className="text-muted-foreground">-</span>;
+
+  return (
+    <div className="text-xs text-muted-foreground space-y-0.5">
+      {weight != null && <div>Peso: {Number(weight).toFixed(3)} kg</div>}
+      {(height != null || width != null || depth != null) && (
+        <div>
+          Dim.: {[width, height, depth]
+            .filter((d) => d != null)
+            .map((d) => Number(d))
+            .join(" × ")}{" "}
+          cm
+        </div>
+      )}
+    </div>
+  );
+}
+
+const categories = ["Brincos", "Anéis", "Braceletes", "Chokers", "Conjuntos", "Pingentes", "Chaveiros", "Decoração", "Pulseiras", "Geral"];
+
 export default function Products() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form] = Form.useForm();
   const qc = useQueryClient();
 
-  // Estados de Paginação e Filtros
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<string | undefined>(undefined);
+  const { page, limit, search, debouncedSearch, filter, setPage, changeSearch, changeLimit, changeFilter } = useTableFilters<{ category: string }>();
+  const category = filter?.category ?? 'all';
 
-  const debouncedSearch = useDebounce(search, 500);
-
-  // Consome a função getAll com a assinatura exata do seu arquivo api.ts
-  const { data: apiResponse, isLoading } = useQuery({
-    queryKey: ['products', page, limit, debouncedSearch, category],
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["products", page, limit, debouncedSearch, category],
     queryFn: async () => {
       return productsApi.getAll({
         page,
         limit,
         search: debouncedSearch || undefined,
-        category: category || undefined,
+        category: category !== "all" ? category : undefined,
       });
     },
     placeholderData: (previousData) => previousData,
   });
 
-  useWebSocket('products_updated', () => {
-    qc.invalidateQueries({ queryKey: ['products'] });
-    message.success('Estoque atualizado em tempo real!');
-  });
+  useWebSocket("products_updated", useCallback(() => {
+    qc.invalidateQueries({ queryKey: ["products"] });
+    toast.success("Estoque atualizado em tempo real!");
+  }, [qc]));
 
   const syncMutation = useMutation({
     mutationFn: productsApi.syncNuvemshop,
     onSuccess: (res) => {
-      message.success(`Sincronização concluída! ${res.processed || 0} produtos atualizados.`);
-      qc.invalidateQueries({ queryKey: ['products'] });
+      toast.success(`Sincronização concluída! ${res.processed || 0} produtos atualizados.`);
+      qc.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (err: any) => message.error(`Falha ao sincronizar: ${err.message}`)
+    onError: (error: Error) => toast.error(`Falha ao sincronizar: ${getFriendlyError(error)}`),
   });
 
-  // Ordenação baseada no seu tipo real: product.active
+  const [stockSort, setStockSort] = useState<'asc' | 'desc' | null>(null);
+
+  function toggleStockSort() {
+    setStockSort((prev) => (prev === null ? 'asc' : prev === 'asc' ? 'desc' : null));
+  }
+
   const sortedProducts = useMemo(() => {
-    const productsArray = apiResponse?.products;
+    const productsArray = data?.products;
     if (!productsArray || !Array.isArray(productsArray)) return [];
-
+    if (stockSort) {
+      return sortProductsByStock(productsArray, stockSort);
+    }
     return [...productsArray].sort((a, b) => {
-      return (b.active ? 1 : 0) - (a.active ? 1 : 0);
+      return (b.is_active ? 1 : 0) - (a.is_active ? 1 : 0);
     });
-  }, [apiResponse]);
+  }, [data, stockSort]);
 
-  // Expandir automaticamente as linhas quando houver termo de busca ativa
-  const expandedRowKeys = useMemo(() => {
-    if (!debouncedSearch) return [];
-    return sortedProducts.map(p => p.nuvemshop_id);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (debouncedSearch) {
+      setExpandedRows(new Set(sortedProducts.map((p) => p.id)));
+    } else {
+      setExpandedRows(new Set());
+    }
   }, [debouncedSearch, sortedProducts]);
 
-  // Sub-tabela baseada estritamente nas propriedades do seu ProductVariant
-  const expandedRowRender = (product: Product) => {
-    const variantColumns = [
-      {
-        title: 'ID Variante',
-        dataIndex: 'id',
-        key: 'id',
-        width: 150,
-        render: (id: string) => <span style={{ color: '#aaa', fontSize: '11px', fontFamily: 'monospace' }}>{id}</span>
-      },
-      {
-        title: 'Nome da Variação',
-        dataIndex: 'name',
-        key: 'name',
-        render: (name: string) => <span style={{ fontWeight: 500, color: '#555' }}>{name || 'Padrão'}</span>
-      },
-      {
-        title: 'SKU',
-        dataIndex: 'sku',
-        key: 'sku',
-        render: (sku: string) => sku ? <Tag color="blue">{sku}</Tag> : '-'
-      },
-      {
-        title: 'Preço',
-        dataIndex: 'price',
-        key: 'price',
-        width: 130,
-        render: (v: number) => `R$ ${Number(v || 0).toFixed(2)}`
-      },
-      {
-        title: 'Estoque Local',
-        dataIndex: 'stock_quantity',
-        key: 'stock_quantity',
-        width: 130,
-        render: (stock: number) => {
-          const s = Number(stock || 0);
-          return (
-              <span style={{ color: s <= 10 ? '#ff4d4f' : '#27ae60', fontWeight: s <= 5 ? 600 : 400 }}>
-              {s} {s <= 10 ? '⚠️ Repor' : '✓'}
-            </span>
-          );
-        }
-      }
-    ];
+  function toggleRow(id: string) {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
-    return (
-        <Table
-            columns={variantColumns}
-            dataSource={product.variants || []}
-            pagination={false}
-            rowKey="id"
-            size="small"
-            bordered
-        />
-    );
-  };
-
-  const columns = [
-    {
-      title: 'Nuvemshop ID',
-      dataIndex: 'nuvemshop_id',
-      key: 'nuvemshop_id',
-      width: 150,
-      render: (id: string) => <span style={{ color: '#999', fontSize: '11px', fontFamily: 'monospace' }}>{id || '-'}</span>
-    },
-    {
-      title: 'Nome do Produto',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name: string) => <span style={{ fontWeight: 600, color: '#111' }}>{name}</span>
-    },
-    {
-      title: 'Slug',
-      dataIndex: 'slug',
-      key: 'slug',
-      render: (slug: string) => <span style={{ color: '#666', fontSize: '12px' }}>{slug}</span>
-    },
-    {
-      title: 'Categoria',
-      dataIndex: 'category',
-      key: 'category',
-      width: 150,
-      render: (cat: string) => cat ? <Tag color="purple">{cat}</Tag> : <Tag color="warning">Geral</Tag>
-    },
-    {
-      title: 'Status',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      width: 110,
-      render: (active: boolean) => (
-          <Tag color={active ? 'green' : 'default'}>{active ? 'Ativo' : 'Inativo'}</Tag>
-      )
-    }
-  ];
+  const products = sortedProducts;
+  const hasFilters = debouncedSearch || category !== "all";
 
   return (
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold">Produtos & Estoque</h1>
-            <p className="text-gray-400 text-xs">Catálogo master de produtos e variações</p>
-          </div>
-          <Space>
-            <Button
-                icon={<SyncOutlined spin={syncMutation.isPending} />}
-                onClick={() => syncMutation.mutate()}
-                loading={syncMutation.isPending}
-            >
-              Sincronizar Nuvemshop
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-              Add Product
-            </Button>
-          </Space>
-        </div>
-
-        <Card className="mb-6" size="small" title={<Space><FilterOutlined />Filtros Estatísticos</Space>}>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={14}>
-              <Input
-                  placeholder="Pesquisar por nome do produto, SKU interno ou IDs..."
-                  prefix={<SearchOutlined className="text-gray-400" />}
-                  value={search}
-                  allowClear
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              />
-            </Col>
-            <Col xs={24} md={10}>
-              <Select
-                  className="w-full"
-                  placeholder="Filtrar por Categoria"
-                  allowClear
-                  value={category}
-                  onChange={(value) => { setCategory(value); setPage(1); }}
-                  options={[
-                    { value: 'Brincos ', label: 'Brincos' },
-                    { value: 'Anéis', label: 'Anéis' },
-                    { value: 'Braceletes ', label: 'Braceletes' },
-                    { value: 'Chokers', label: 'Chokers' },
-                    { value: 'Conjuntos', label: 'Conjuntos' },
-                    { value: 'Pingentes', label: 'Pingentes' },
-                    { value: 'Chaveiros', label: 'Chaveiros' },
-                    { value: 'Decoração', label: 'Decoração' },
-                    { value: 'Pulseiras ', label: 'Pulseiras' },
-                    { value: 'Geral', label: 'Geral' },
-                  ]}
-              />
-            </Col>
-          </Row>
-        </Card>
-
-        <Table
-            rowKey="nuvemshop_id" // Alterado para mapear a chave única real do seu tipo Product
-            loading={isLoading}
-            dataSource={sortedProducts}
-            columns={columns}
-            bordered
-            size="middle"
-            expandable={{
-              expandedRowRender,
-              rowExpandable: (record) => record.variants && record.variants.length > 0,
-              expandedRowKeys: expandedRowKeys.length > 0 ? expandedRowKeys : undefined,
-            }}
-            pagination={{
-              current: page,
-              pageSize: limit,
-              total: apiResponse?.total || 0,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50'],
-              onChange: (p, s) => {
-                setPage(p);
-                setLimit(s);
-              }
-            }}
-        />
-
-        <CreateProductModal
-            open={modalOpen}
-            onClose={() => setModalOpen(false)}
-        />
+    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
+      <div className="shrink-0">
+        <h1 className="text-2xl font-semibold">Produtos & Estoque</h1>
+        <p className="text-sm text-muted-foreground">Catálogo master de produtos e variações</p>
       </div>
+
+      <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Pesquisar por nome do produto, SKU interno ou IDs..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => { changeSearch(e.target.value); }}
+          />
+        </div>
+        <Select
+          value={category}
+          onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { category: value }); }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filtrar por Categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as Categorias</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center justify-between shrink-0">
+        <p className="text-sm text-muted-foreground">
+          {data ? `${data.total} resultado${data.total !== 1 ? "s" : ""}` : ""}
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+            <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
+            Sincronizar Nuvemshop
+          </Button>
+        </div>
+      </div>
+
+      <div>
+        {isError ? (
+          <div className="flex items-center justify-center py-16">
+            <Alert variant="destructive" className="w-full max-w-lg">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Erro ao carregar produtos</AlertTitle>
+              <AlertDescription>
+                <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
+                  Tentar novamente
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : products.length === 0 && !isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <Package className="h-12 w-12 mb-4" />
+            <p className="text-lg font-medium">Nenhum produto cadastrado</p>
+            <p className="text-sm mb-4">
+              {hasFilters ? "Tente ajustar os filtros." : "Nenhum produto cadastrado ainda. Sincronize com a Nuvemshop para começar."}
+            </p>
+          </div>
+        ) : (
+          <div className="[&>div]:overflow-visible">
+            <Table className="table-fixed">
+              <TableHeader className="sticky top-0 z-10 bg-background">
+                <TableRow>
+                  <TableHead className="w-[3%] min-w-[2rem]" />
+                  <TableHead>Nome do Produto</TableHead>
+                  <TableHead className="w-[18%]">Categoria</TableHead>
+                  <TableHead className="w-[13%]">Status</TableHead>
+                  <TableHead className="w-[11%]">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 hover:text-foreground"
+                      onClick={toggleStockSort}
+                      aria-label="Ordenar por Estoque Local"
+                      aria-pressed={stockSort !== null}
+                      title={stockSort ? "Clique para limpar a ordenação" : "Clique para ordenar por estoque"}
+                    >
+                      Estoque Local
+                      {stockSort ? (
+                        stockSort === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+                      )}
+                    </button>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-48" />
+                        <Skeleton className="h-3 w-32 mt-1" />
+                      </TableCell>
+                      <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                products.map((product) => (
+                  <Fragment key={product.id}>
+                    <TableRow
+                      key={`${product.id}-data`}
+                      className="cursor-pointer transition-colors hover:bg-accent/20"
+                      onClick={() => toggleRow(product.id)}
+                    >
+                      <TableCell>
+                        <ChevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform ${
+                            expandedRows.has(product.id) ? "rotate-180" : ""
+                          }`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="truncate font-semibold">{product.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">{product.slug}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">
+                          {product.category || "Geral"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={product.is_active ? "default" : "secondary"}>
+                          {product.is_active ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <StockIndicator quantity={totalStock(product.variants)} />
+                      </TableCell>
+                    </TableRow>
+                    {expandedRows.has(product.id) && (
+                      product.variants && product.variants.length > 0 ? (
+                        <TableRow key={`${product.id}-variants`} className="hover:bg-accent/20">
+                          <TableCell colSpan={5} className="p-0">
+                            <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                              <table className="w-full table-fixed text-sm">
+                                <thead>
+                                  <tr className="border-b">
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nome</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[100px]">SKU</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[110px]">Preço</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[130px]">Estoque Local</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[140px]">Dimensões</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {product.variants.map((variant) => (
+                                    <tr key={variant.id} className="border-b last:border-0">
+                                      <td className="p-4 align-middle font-medium text-muted-foreground">
+                                        {variant.name || "Padrão"}
+                                      </td>
+                                      <td className="p-4 align-middle">
+                                        <div className="flex items-center gap-1">
+                                          {variant.sku ? (
+                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                              {variant.sku}
+                                            </Badge>
+                                          ) : (
+                                            <span className="text-muted-foreground">-</span>
+                                          )}
+                                          {variant.has_promotional_price ? (
+                                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                                              Promoção
+                                            </Badge>
+                                          ) : null}
+                                        </div>
+                                      </td>
+                                      <td className="p-4 align-middle">{formatCurrency(variant.price)}</td>
+                                      <td className="p-4 align-middle">
+                                        <StockIndicator quantity={variant.stock_quantity} />
+                                      </td>
+                                      <td className="p-4 align-middle">
+                                        <DimensionsDisplay variant={variant} />
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        <TableRow key={`${product.id}-novariants`} className="hover:bg-accent/20">
+                          <TableCell colSpan={5} className="p-0">
+                            <div className="bg-muted/30 rounded-xl mx-4 my-2 p-4 text-sm text-muted-foreground animate-in fade-in slide-in-from-top-2 duration-200">
+                              Nenhuma variação cadastrada
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
+                  </Fragment>
+                )))}
+            </TableBody>
+          </Table>
+        </div>
+        )}
+      </div>
+
+      {data && (
+        <DataTablePagination
+          page={data.page}
+          limit={data.limit}
+          total={data.total}
+          onPageChange={setPage}
+          onLimitChange={changeLimit}
+        />
+      )}
+    </div>
   );
 }

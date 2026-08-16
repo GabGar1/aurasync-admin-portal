@@ -1,9 +1,11 @@
 export interface User {
   id: string;
-  name: string;
   email: string;
-  role: 'ADMIN' | 'EMPLOYEE';
-  createdAt: string;
+  first_name: string;
+  last_name: string;
+  role: 'ADMIN' | 'EMPLOYEE' | 'SUPER_ADMIN';
+  status: boolean;
+  created_at: string;
 }
 
 export interface LoginPayload {
@@ -15,6 +17,30 @@ export interface LoginResponse {
   token: string;
   user: User;
 }
+
+export interface ProductVariant {
+  id: string;
+  sku: string;
+  name: string;
+  price: number;
+  stock_quantity: number;
+  cost_price: number;
+  packaging_cost: number;
+  platform_fee_percent: number;
+  fixed_fee: number;
+  has_promotional_price: boolean | null;
+}
+
+export interface Product {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  is_active: boolean;
+  subgroup_id?: string | null;
+  variants: ProductVariant[];
+}
+
 export interface GetProductsResponse {
   products: Product[];
   total: number;
@@ -22,53 +48,527 @@ export interface GetProductsResponse {
   limit: number;
 }
 
-
-export interface ProductVariant {
-  id: string;
-  sku: string;
+export interface CreateProductPayload {
+  slug: string;
   name: string;
-  price: number;
-  stock: number;
+  category: string;
+  is_active: boolean;
+  variants: {
+    sku: string;
+    name: string;
+    price: number;
+    stock_quantity: number;
+    cost_price: number;
+    packaging_cost: number;
+    platform_fee_percent: number;
+    fixed_fee: number;
+  }[];
 }
 
-export interface Product {
-  nuvemshop_id: string;
+export interface CostBreakdownItem {
+  component_id: string | null;
   name: string;
-  slug: string;
+  type: string;
   category: string;
-  active: boolean;
-  variants: ProductVariant[];
+  unit_value: number;
+  quantity: number;
+  line_total: number;
 }
 
 export interface OrderItem {
   id: string;
-  productName: string;
-  variantSku: string;
+  variant_id: string;
+  product_name?: string | null;
+  variant_name?: string | null;
   quantity: number;
-  unitPrice: number;
+  unit_price: number;
+  unit_cost: number;
+  unit_packaging_cost: number;
+  unit_platform_fee: number;
+  unit_tax: number;
+  unit_shipping_cost: number;
+  unit_operational_cost: number;
+  unit_marketing_cost: number;
+  unit_other_cost: number;
+  unit_total_cost: number;
+  unit_profit: number;
+  margin_percent: number;
+  cost_breakdown: CostBreakdownItem[] | null;
+  has_promotional_price: boolean | null;
+  status: boolean;
 }
 
 export interface Order {
   id: string;
-  customerName: string;
-  totalAmount: number;
-  date: string;
-  status: 'PENDING' | 'PAID' | 'CANCELED';
+  nuvemshop_order_id: string | null;
+  customer_name: string | null;
+  customer_email: string | null;
+  status: string;
+  status_label?: string;
+  payment_status_label?: string;
+  fulfillment_status_label?: string;
+  commercial_status?: string;
+  total_amount: number;
+  total_cost?: number;
+  total_profit?: number;
+  margin_percent?: number;
+  is_fair?: boolean | null;
+  monthly_cost_total?: number;
+  total_cost_with_monthly?: number;
+  monthly_allocations?: MonthlyAllocation[];
+  source?: string;
+  storefront?: string | null;
+  discount_amount: number | null;
+  payment_status: string | null;
+  fulfillment_status: string | null;
+  payment_method: string | null;
+  payment_installments: number | null;
+  gateway: string | null;
+  has_free_shipping: boolean | null;
+  shipping_cost_customer: number | null;
+  shipping_cost_owner: number | null;
+  shipping_carrier: string | null;
+  shipping_city: string | null;
+  shipping_province: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  paid_at: string | null;
+  shipped_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
   items: OrderItem[];
+}
+
+export interface GetOrdersResponse {
+  orders: Order[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface InventoryTransaction {
   id: string;
-  variantId: string;
-  variantSku: string;
-  type: 'IN' | 'OUT' | 'SALE' | 'RESTOCK';
-  quantityChanged: number;
-  date: string;
+  variant_id: string;
+  type: 'SALE' | 'RESTOCK' | 'ADJUSTMENT';
+  quantity_changed: number;
+  order_id?: string;
+  created_at: string;
 }
 
-export interface DashboardStats {
-  totalSales: number;
-  activeProducts: number;
-  pendingOrders: number;
-  lowStockAlerts: number;
+export interface GetInventoryResponse {
+  transactions: InventoryTransaction[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CreateInventoryPayload {
+  variant_id: string;
+  type: 'SALE' | 'RESTOCK' | 'ADJUSTMENT';
+  quantity_changed: number;
+  order_id?: string;
+}
+
+export interface GetUsersResponse {
+  users: User[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CreateUserPayload {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface UpdateUserPayload {
+  first_name?: string;
+  last_name?: string;
+  status?: boolean;
+}
+
+export interface RevenueTrendItem {
+  date: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface HourStats {
+  hour: number;
+  orders: number;
+  revenue: number;
+}
+
+export interface TopProductItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  total_sold: number;
+  revenue: number;
+  category?: string | null;
+}
+
+export interface OrderStatusStats {
+  status: string;
+  count: number;
+}
+
+export interface RepeatCustomers {
+  unique_customers: number;
+  repeat_customers: number;
+  repeat_rate: number;
+}
+
+export interface OrdersResponse {
+  by_hour: HourStats[];
+  top_products: TopProductItem[];
+  average_order_value: number;
+  revenue_trend: RevenueTrendItem[];
+  by_status: OrderStatusStats[];
+  repeat_customers: RepeatCustomers;
+}
+
+export interface StorefrontStats {
+  storefront: string | null;
+  orders: number;
+  revenue: number;
+}
+
+export interface ProvinceStats {
+  province: string | null;
+  orders: number;
+  revenue: number;
+}
+
+export interface CampaignStats {
+  campaign: string | null;
+  orders: number;
+  revenue: number;
+  aov: number;
+}
+
+export interface SourceStats {
+  source: string | null;
+  medium: string | null;
+  orders: number;
+  revenue: number;
+}
+
+export interface PaymentMethodStats {
+  method: string | null;
+  orders: number;
+  revenue: number;
+}
+
+export interface MarketingResponse {
+  by_storefront: StorefrontStats[];
+  by_province: ProvinceStats[];
+  by_campaign: CampaignStats[];
+  by_source: SourceStats[];
+  by_payment_method: PaymentMethodStats[];
+}
+
+export interface LowStockItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  sku: string | null;
+  stock: number;
+}
+
+export interface NoSalesItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  stock: number;
+}
+
+export interface TurnoverItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  sales_qty_30d: number;
+  avg_stock: number;
+  turnover: number;
+}
+
+export interface StockValueByCategory {
+  category: string | null;
+  total_value: number;
+  variant_count: number;
+}
+
+export interface DeadStockItem {
+  product_id: string;
+  product_name: string;
+  variant_name: string | null;
+  stock: number;
+  days_without_sale: number;
+}
+
+export interface StockResponse {
+  low_stock: LowStockItem[];
+  no_sales_30d: NoSalesItem[];
+  turnover_rate: TurnoverItem[];
+  stock_value_by_category: StockValueByCategory[];
+  dead_stock: DeadStockItem[];
+}
+
+export interface ApiError {
+  response?: { data?: { error?: string } };
+  message?: string;
+}
+
+export interface UserStats {
+  total: number;
+  byRole: Record<string, number>;
+  recent: number;
+}
+
+export type CostComponentType = 'FIXED' | 'PERCENT' | 'PER_ORDER' | 'PACKAGING' | 'MONTHLY_FIXED' | 'MONTHLY_PERCENT';
+export type CostComponentCategory = 'PACKAGING' | 'TAX' | 'FEE' | 'SHIPPING' | 'OPERATIONAL' | 'MARKETING' | 'OTHER' | 'ACQUISITION' | 'CREDIT_FEE';
+export type CalculationBase = 'PRICE' | 'COST';
+export type AllocationBasis = 'PER_ORDER' | 'PER_PRODUCT';
+
+export interface CostComponent {
+  id: string;
+  name: string;
+  description: string | null;
+  type: CostComponentType;
+  category: CostComponentCategory;
+  value: number;
+  calculation_base: CalculationBase;
+  is_active: boolean;
+  max_products_per_package: number | null;
+  consolidates: boolean;
+  allocation_basis: AllocationBasis | null;
+  period_start: string | null;
+  period_end: string | null;
+  applies_to_fair_only: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CostComponentPayload {
+  name: string;
+  description?: string | null;
+  type: CostComponentType;
+  category?: CostComponentCategory;
+  value: number;
+  calculation_base?: CalculationBase;
+  is_active?: boolean;
+  max_products_per_package?: number | null;
+  consolidates?: boolean;
+  allocation_basis?: AllocationBasis | null;
+  period_start?: string | null;
+  period_end?: string | null;
+  applies_to_fair_only?: boolean;
+}
+
+export interface ProductSubgroup {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductSubgroupPayload {
+  name: string;
+  description?: string;
+  is_active?: boolean;
+}
+
+export interface SubgroupAssociation {
+  id: string;
+  subgroup_id: string;
+  cost_component_id: string;
+  quantity: number;
+  component?: CostComponent | null;
+}
+
+export interface CreditFeeTier {
+  id: string;
+  installments: number;
+  percent: number;
+  fixed_fee: number;
+  is_active: boolean;
+}
+
+export interface CreditFeeTierUpdate {
+  percent?: number;
+  fixed_fee?: number;
+  is_active?: boolean;
+}
+
+export interface CostClosingInput {
+  month?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface CostClosingComponent {
+  id: string;
+  name: string;
+  type: string;
+  allocation_basis: string | null;
+}
+
+export interface CostClosingResponse {
+  period: { start: string; end: string };
+  components: CostClosingComponent[];
+  orders: number;
+  products: number;
+  allocations: number;
+}
+
+export interface MonthlyAllocation {
+  id: string;
+  order_id: string;
+  cost_component_id: string;
+  amount: number;
+  period_start: string;
+  period_end: string;
+  cost_component_name?: string | null;
+}
+
+export interface CostAssociation {
+  id: string;
+  product_id: string;
+  cost_component_id: string;
+  quantity: number;
+  component?: CostComponent;
+}
+
+export interface CostSimulateInput {
+  variant_id: string;
+  unit_price: number;
+  quantity: number;
+}
+
+export interface CostSimulateResponse {
+  unit_cost: number;
+  unit_packaging_cost: number;
+  unit_platform_fee: number;
+  unit_tax: number;
+  unit_shipping_cost: number;
+  unit_operational_cost: number;
+  unit_marketing_cost: number;
+  unit_other_cost: number;
+  unit_total_cost: number;
+  unit_profit: number;
+  margin_percent: number;
+  cost_breakdown: CostBreakdownItem[];
+}
+
+export interface ExternalSaleItemPayload {
+  variant_id: string;
+  quantity: number;
+  unit_price: number;
+}
+
+export interface ExternalSalePayload {
+  customer_name: string;
+  customer_email?: string | null;
+  items: ExternalSaleItemPayload[];
+  discount_amount?: number;
+  payment_method?: string;
+  gateway?: string;
+  payment_installments?: number;
+  shipping_cost_owner?: number;
+  shipping_cost_customer?: number;
+  is_fair?: boolean;
+  status?: 'PENDING' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
+}
+
+export interface CreateCustomerPayload {
+  name: string;
+  email?: string;
+  city?: string;
+  province?: string;
+}
+
+export interface ExternalSaleResultItem {
+  id: string;
+  variant_id: string;
+  quantity: number;
+  unit_price: number;
+  unit_cost: number;
+  unit_total_cost: number;
+  unit_profit: number;
+  margin_percent: number;
+  cost_breakdown: CostBreakdownItem[] | null;
+  status: boolean;
+}
+
+export interface ExternalSaleResult {
+  id: string;
+  nuvemshop_order_id?: string | null;
+  customer_name: string | null;
+  status: string;
+  total_amount: number;
+  source?: string;
+  discount_amount: number | null;
+  shipping_cost_customer: number | null;
+  shipping_cost_owner: number | null;
+  payment_method: string | null;
+  gateway: string | null;
+  payment_installments: number | null;
+  total_cost?: number;
+  total_profit?: number;
+  margin_percent?: number;
+  created_at: string;
+  updated_at: string;
+  items: ExternalSaleResultItem[];
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string | null;
+  city: string | null;
+  province: string | null;
+  order_count: number;
+  total_spent: number;
+  average_ticket: number;
+  first_purchase_at: string | null;
+  last_purchase_at: string | null;
+  created_at: string;
+}
+
+export interface CustomerIndicators {
+  order_count: number;
+  total_spent: number;
+  average_ticket: number;
+  first_purchase_at: string | null;
+  last_purchase_at: string | null;
+  favorite_payment_method: string | null;
+  favorite_gateway: string | null;
+  recurrence: number;
+}
+
+export interface CustomerDetail extends Customer {
+  indicators: CustomerIndicators;
+}
+
+export interface CustomerOrder {
+  id: string;
+  customer_name: string | null;
+  status: string;
+  total_amount: number;
+  created_at: string;
+}
+
+export interface GetCustomersResponse {
+  customers: Customer[];
+  total: number;
+  page: number;
+  limit: number;
 }

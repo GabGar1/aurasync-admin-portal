@@ -1,95 +1,366 @@
 import axios from 'axios';
 import type {
-  LoginPayload, LoginResponse, Product, Order,
-  InventoryTransaction, DashboardStats, User
+  LoginPayload, LoginResponse, Product, CreateProductPayload,
+  GetProductsResponse, Order, GetOrdersResponse,
+  InventoryTransaction, CreateInventoryPayload, GetInventoryResponse,
+  User, CreateUserPayload, UpdateUserPayload, GetUsersResponse,
+  OrdersResponse, MarketingResponse, StockResponse, UserStats,
+  CostComponent, CostComponentPayload, CostAssociation, CostSimulateInput, CostSimulateResponse,
+  ExternalSalePayload, ExternalSaleResult, CreateCustomerPayload,
+  Customer, CustomerDetail, CustomerOrder, GetCustomersResponse,
+  ProductSubgroup, ProductSubgroupPayload, SubgroupAssociation,
+  CreditFeeTier, CreditFeeTierUpdate,
+  CostClosingInput, CostClosingResponse,
 } from '@/types';
-import {GetProductsResponse} from "@/types";
 
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3333/api';
 
+axios.defaults.withCredentials = true;
+axios.defaults.withXSRFToken = true;
+axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+axios.defaults.xsrfHeaderName = 'X-CSRF-TOKEN';
+
 const api = axios.create({
-  baseURL: 'http://localhost:3333/api',
+  baseURL,
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('aurasync_token');
-  console.log("token: ", token)
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && !error.config?.url?.includes('/login') && !error.config?.url?.includes('/auth/')) {
+      window.location.href = '/login';
+    }
+    if (error?.response?.status === 403 && ['GET', 'HEAD', 'OPTIONS'].includes((error.config?.method ?? '').toUpperCase())) {
+      window.location.href = '/products';
+    }
+    return Promise.reject(error);
   }
-  return config;
-});
-
-// ─── Mock Data ───────────────────────────────────────────────
-
-const mockOrders: Order[] = [
-  { id: 'ORD-001', customerName: 'Alice Johnson', totalAmount: 259.98, date: '2025-04-07', status: 'PAID', items: [] },
-  { id: 'ORD-002', customerName: 'Bob Smith', totalAmount: 299.99, date: '2025-04-08', status: 'PENDING', items: [] },
-  { id: 'ORD-003', customerName: 'Carol Lee', totalAmount: 59.99, date: '2025-04-08', status: 'CANCELED', items: [] },
-  { id: 'ORD-004', customerName: 'David Kim', totalAmount: 439.97, date: '2025-04-09', status: 'PENDING', items: [] },
-  { id: 'ORD-005', customerName: 'Eva Martinez', totalAmount: 179.99, date: '2025-04-09', status: 'PAID', items: [] },
-];
-
-const mockInventory: InventoryTransaction[] = [
-  { id: 'tx1', variantId: 'v1', variantSku: 'AWH-BLK-01', type: 'RESTOCK', quantityChanged: 50, date: '2025-04-01' },
-  { id: 'tx2', variantId: 'v1', variantSku: 'AWH-BLK-01', type: 'SALE', quantityChanged: -8, date: '2025-04-05' },
-  { id: 'tx3', variantId: 'v3', variantSku: 'NSW-SIL-01', type: 'SALE', quantityChanged: -3, date: '2025-04-06' },
-  { id: 'tx4', variantId: 'v6', variantSku: 'ZMK-WHT-01', type: 'OUT', quantityChanged: -15, date: '2025-04-07' },
-  { id: 'tx5', variantId: 'v4', variantSku: 'PUH-GRY-01', type: 'IN', quantityChanged: 100, date: '2025-04-08' },
-  { id: 'tx6', variantId: 'v2', variantSku: 'AWH-WHT-01', type: 'SALE', quantityChanged: -2, date: '2025-04-09' },
-];
-
-const mockUsers: User[] = [
-  { id: 'u1', name: 'Admin User', email: 'admin@aurasync.io', role: 'ADMIN', createdAt: '2025-01-01' },
-  { id: 'u2', name: 'Jane Employee', email: 'jane@aurasync.io', role: 'EMPLOYEE', createdAt: '2025-02-15' },
-];
-
-// ─── Mock API Functions ──────────────────────────────────────
-
-const delay = (ms = 400) => new Promise(r => setTimeout(r, ms));
+);
 
 export const authApi = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/login', payload);
-
+    const response = await api.post<LoginResponse>('/auth/login', payload);
+    return response.data;
+  },
+  getMe: async (): Promise<User> => {
+    const response = await api.get<User>('/auth/me');
+    return response.data;
+  },
+  logout: async (): Promise<void> => {
+    await api.post('/auth/logout');
+  },
+  getCsrfToken: async (): Promise<{ csrfToken: string }> => {
+    const response = await api.get<{ csrfToken: string }>('/auth/csrf');
     return response.data;
   },
 };
 
+export interface DashboardQueryParams {
+  days?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
 export const dashboardApi = {
-  getStats: async (): Promise<DashboardStats> => {
-    await delay();
-    return { totalSales: 12847.50, activeProducts: 3, pendingOrders: 2, lowStockAlerts: 2 };
+  getOrders: async (params?: DashboardQueryParams): Promise<OrdersResponse> => {
+    const response = await api.get<OrdersResponse>('/dashboard/orders', { params });
+    return response.data;
+  },
+  getMarketing: async (params?: DashboardQueryParams): Promise<MarketingResponse> => {
+    const response = await api.get<MarketingResponse>('/dashboard/marketing', { params });
+    return response.data;
+  },
+  getStock: async (days?: number): Promise<StockResponse> => {
+    const response = await api.get<StockResponse>('/dashboard/stock', { params: { days } });
+    return response.data;
+  },
+  getUserStats: async (): Promise<UserStats> => {
+    const response = await api.get<UserStats>('/users/stats');
+    return response.data;
   },
 };
 
 export const productsApi = {
-  getAll: async (params?: { page?: number; limit?: number; search?: string; category?: string }) => {
-    const response = await api.get('/products', { params });
+  getAll: async (params?: { page?: number; limit?: number; search?: string; category?: string; is_active?: boolean }): Promise<GetProductsResponse> => {
+    const response = await api.get<GetProductsResponse>('/products', { params });
     return response.data;
+  },
+
+  getById: async (id: string): Promise<Product> => {
+    const response = await api.get<Product>(`/products/${id}`);
+    return response.data;
+  },
+
+  getBySlug: async (slug: string): Promise<Product> => {
+    const response = await api.get<Product>(`/products/slug/${slug}`);
+    return response.data;
+  },
+
+  create: async (product: CreateProductPayload): Promise<Product> => {
+    const response = await api.post<Product>('/products', product);
+    return response.data;
+  },
+
+  update: async (id: string, product: Partial<CreateProductPayload>): Promise<Product> => {
+    const response = await api.put<Product>(`/products/${id}`, product);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/products/${id}`);
   },
 
   syncNuvemshop: async (): Promise<{ success: boolean; processed: number }> => {
     const response = await api.post('/products/sync/nuvemshop');
     return response.data;
   },
-
-  create: async (product: Partial<Product>): Promise<Product> => {
-    const response = await api.post<Product>('/products', product);
-    return response.data.products;
-  },
 };
 
 export const ordersApi = {
-  getAll: async (): Promise<Order[]> => { await delay(); return mockOrders; },
+  getAll: async (params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<GetOrdersResponse> => {
+    const response = await api.get<GetOrdersResponse>('/orders', { params });
+    return response.data;
+  },
+
+  update: async (id: string, order: { status: string }): Promise<Order> => {
+    const response = await api.put<Order>(`/orders/${id}`, order);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/orders/${id}`);
+  },
+
+  syncNuvemshop: async (): Promise<{ message: string }> => {
+    const response = await api.post<{ message: string }>('/orders/sync/nuvemshop');
+    return response.data;
+  },
 };
 
 export const inventoryApi = {
-  getAll: async (): Promise<InventoryTransaction[]> => { await delay(); return mockInventory; },
+  getAll: async (params?: { page?: number; limit?: number }): Promise<GetInventoryResponse> => {
+    const response = await api.get<GetInventoryResponse>('/inventory', { params });
+    return response.data;
+  },
+
+  getByVariant: async (variantId: string): Promise<InventoryTransaction[]> => {
+    const response = await api.get<InventoryTransaction[]>(`/inventory/variant/${variantId}`);
+    return response.data;
+  },
+
+  create: async (payload: CreateInventoryPayload): Promise<InventoryTransaction> => {
+    const response = await api.post<InventoryTransaction>('/inventory', payload);
+    return response.data;
+  },
 };
 
 export const usersApi = {
-  getAll: async (): Promise<User[]> => { await delay(); return mockUsers; },
+  getAll: async (params?: { page?: number; limit?: number; role?: string; search?: string }): Promise<GetUsersResponse> => {
+    const response = await api.get<GetUsersResponse>('/users', { params });
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<User> => {
+    const response = await api.get<User>(`/users/${id}`);
+    return response.data;
+  },
+
+  create: async (payload: CreateUserPayload): Promise<User> => {
+    const response = await api.post<User>('/users', payload);
+    return response.data;
+  },
+
+  update: async (id: string, payload: UpdateUserPayload): Promise<User> => {
+    const response = await api.put<User>(`/users/${id}`, payload);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/users/${id}`);
+  },
+};
+
+export const costComponentsApi = {
+  list: async (params?: { is_active?: boolean; search?: string }): Promise<CostComponent[]> => {
+    const response = await api.get<CostComponent[]>('/cost-components', { params });
+    return response.data;
+  },
+
+  create: async (payload: CostComponentPayload): Promise<CostComponent> => {
+    const response = await api.post<CostComponent>('/cost-components', payload);
+    return response.data;
+  },
+
+  update: async (id: string, payload: Partial<CostComponentPayload>): Promise<CostComponent> => {
+    const response = await api.put<CostComponent>(`/cost-components/${id}`, payload);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/cost-components/${id}`);
+  },
+
+  getByProduct: async (productId: string): Promise<{ associations: CostAssociation[] }> => {
+    const response = await api.get<{ associations: CostAssociation[] }>(`/cost-components/product/${productId}`);
+    return response.data;
+  },
+
+  associate: async (payload: { product_id: string; cost_component_id: string; quantity: number }): Promise<CostAssociation> => {
+    const response = await api.post<CostAssociation>('/cost-components/associate', payload);
+    return response.data;
+  },
+
+  associateSubgroup: async (payload: { subgroup_id: string; cost_component_id: string; quantity: number }): Promise<SubgroupAssociation> => {
+    const response = await api.post<SubgroupAssociation>('/cost-components/associate-subgroup', payload);
+    return response.data;
+  },
+
+  associateSubgroupBatch: async (payload: { subgroup_id: string; cost_component_ids: string[]; quantity: number }): Promise<{ subgroup_id: string; associations: SubgroupAssociation[] }> => {
+    const response = await api.post<{ subgroup_id: string; associations: SubgroupAssociation[] }>('/cost-components/associate-subgroup-batch', payload);
+    return response.data;
+  },
+
+  removeSubgroupAssociations: async (payload: { subgroup_id: string; cost_component_ids: string[] }): Promise<void> => {
+    await api.delete('/cost-components/associate-subgroup-batch', { data: payload });
+  },
+
+  getBySubgroup: async (subgroupId: string): Promise<{ associations: SubgroupAssociation[] }> => {
+    const response = await api.get<{ associations: SubgroupAssociation[] }>(`/cost-components/subgroup/${subgroupId}`);
+    return response.data;
+  },
+
+  associateBatch: async (payload: { cost_component_id: string; product_ids?: string[]; subgroup_ids?: string[]; quantity: number }): Promise<{ product: { product_id: string }[]; subgroup: { subgroup_id: string }[] }> => {
+    const response = await api.post<{ product: { product_id: string }[]; subgroup: { subgroup_id: string }[] }>('/cost-components/associate-batch', payload);
+    return response.data;
+  },
+
+  associateProductBatch: async (payload: { product_id: string; cost_component_ids: string[]; quantity: number }): Promise<{ product_id: string; associations: CostAssociation[] }> => {
+    const response = await api.post<{ product_id: string; associations: CostAssociation[] }>('/cost-components/associate-product-batch', payload);
+    return response.data;
+  },
+
+  removeAssociation: async (associationId: string): Promise<void> => {
+    await api.delete(`/cost-components/associate/${associationId}`);
+  },
+
+  simulate: async (payload: CostSimulateInput): Promise<CostSimulateResponse> => {
+    const response = await api.post<CostSimulateResponse>('/cost-components/simulate', payload);
+    return response.data;
+  },
+};
+
+export const productSubgroupsApi = {
+  list: async (params?: { is_active?: boolean; search?: string }): Promise<ProductSubgroup[]> => {
+    const response = await api.get<ProductSubgroup[]>('/product-subgroups', { params });
+    return response.data;
+  },
+  create: async (payload: ProductSubgroupPayload): Promise<ProductSubgroup> => {
+    const response = await api.post<ProductSubgroup>('/product-subgroups', payload);
+    return response.data;
+  },
+  update: async (id: string, payload: Partial<ProductSubgroupPayload>): Promise<ProductSubgroup> => {
+    const response = await api.put<ProductSubgroup>(`/product-subgroups/${id}`, payload);
+    return response.data;
+  },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/product-subgroups/${id}`);
+  },
+  assignProducts: async (id: string, product_ids: string[]): Promise<{ assigned: number }> => {
+    const response = await api.post<{ assigned: number }>(`/product-subgroups/${id}/products`, { product_ids });
+    return response.data;
+  },
+  listProducts: async (id: string, params?: { page?: number; limit?: number; search?: string }): Promise<GetProductsResponse> => {
+    const response = await api.get<GetProductsResponse>(`/product-subgroups/${id}/products`, { params });
+    return response.data;
+  },
+  unassignProduct: async (id: string, productId: string): Promise<void> => {
+    await api.delete(`/product-subgroups/${id}/products/${productId}`);
+  },
+};
+
+export const creditFeeTiersApi = {
+  list: async (): Promise<CreditFeeTier[]> => {
+    const response = await api.get<CreditFeeTier[]>('/credit-fee-tiers');
+    return response.data;
+  },
+  update: async (id: string, payload: CreditFeeTierUpdate): Promise<CreditFeeTier> => {
+    const response = await api.put<CreditFeeTier>(`/credit-fee-tiers/${id}`, payload);
+    return response.data;
+  },
+};
+
+export const costClosingApi = {
+  close: async (payload: CostClosingInput): Promise<CostClosingResponse> => {
+    const response = await api.post<CostClosingResponse>('/cost-closing', payload);
+    return response.data;
+  },
+};
+
+export const externalSalesApi = {
+  create: async (payload: ExternalSalePayload): Promise<ExternalSaleResult> => {
+    const response = await api.post<ExternalSaleResult>('/external-sales', payload);
+    return response.data;
+  },
+
+  searchCustomers: async (params?: { page?: number; limit?: number; search?: string }): Promise<GetCustomersResponse> => {
+    const response = await api.get<GetCustomersResponse>('/external-sales/customers', { params });
+    return response.data;
+  },
+};
+
+export const customersApi = {
+  getAll: async (params?: { page?: number; limit?: number; search?: string }): Promise<GetCustomersResponse> => {
+    const response = await api.get<GetCustomersResponse>('/customers', { params });
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<CustomerDetail> => {
+    const response = await api.get<CustomerDetail>(`/customers/${id}`);
+    return response.data;
+  },
+
+  getOrders: async (id: string): Promise<CustomerOrder[]> => {
+    const response = await api.get<CustomerOrder[]>(`/customers/${id}/orders`);
+    return response.data;
+  },
+
+  create: async (payload: CreateCustomerPayload): Promise<Customer> => {
+    const response = await api.post<Customer>('/customers', payload);
+    return response.data;
+  },
 };
 
 export default api;
+
+const errorTranslations: Record<string, string> = {
+  'Invalid email or password': 'Email ou senha inválidos',
+  'User not found': 'Usuário não encontrado',
+  'Product not found': 'Produto não encontrado',
+  'Email already registered': 'Email já cadastrado',
+  'A product with this slug already exists': 'Já existe um produto com este slug',
+  'A product with this new slug already exists': 'Já existe um produto com este slug',
+  'Failed to change password': 'Falha ao alterar a senha',
+  'Unauthorized': 'Não autorizado',
+  'Session cookie not found. Use cookie-based auth.': 'Sessão expirada. Faça login novamente.',
+};
+
+interface ErrorShape {
+  response?: { data?: { error?: unknown } };
+  message?: unknown;
+}
+
+function readErrorMessage(err: unknown): string | undefined {
+  if (typeof err === 'string') return err || undefined;
+  if (!err || typeof err !== 'object') return undefined;
+  const candidate = err as ErrorShape;
+  const fromResponse = candidate.response?.data?.error;
+  if (typeof fromResponse === 'string' && fromResponse) return fromResponse;
+  if (typeof candidate.message === 'string' && candidate.message) return candidate.message;
+  return undefined;
+}
+
+export function getFriendlyError(err: unknown): string {
+  const raw = readErrorMessage(err);
+  if (!raw) return 'Erro desconhecido';
+  return errorTranslations[raw] ?? raw;
+}
