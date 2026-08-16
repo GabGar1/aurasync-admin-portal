@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, getFriendlyError } from "@/services/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useTableFilters } from "@/hooks/useTableFilters";
 import { useAuth } from "@/hooks/useAuth";
 import { isAdmin } from "@/lib/utils";
 import { formatCurrency } from "@/lib/formatters";
@@ -17,7 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, Search, ChevronDown, ChevronLeft, ChevronRight, Plus, RefreshCw, AlertTriangle } from "lucide-react";
+import DataTablePagination from "@/components/DataTablePagination";
+import { Package, Search, ChevronDown, Plus, RefreshCw, AlertTriangle } from "lucide-react";
 import CreateProductModal from "@/components/CreateProductModal";
 
 function StockIndicator({ quantity }: { quantity: number }) {
@@ -80,13 +81,9 @@ export default function Products() {
   const admin = isAdmin(currentUser?.role);
   const qc = useQueryClient();
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<string>("all");
+  const { page, limit, search, debouncedSearch, filter, setPage, changeSearch, changeLimit, changeFilter } = useTableFilters<{ category: string }>();
+  const category = filter?.category ?? 'all';
   const [modalOpen, setModalOpen] = useState(false);
-
-  const debouncedSearch = useDebounce(search, 500);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["products", page, limit, debouncedSearch, category],
@@ -159,12 +156,12 @@ export default function Products() {
             placeholder="Pesquisar por nome do produto, SKU interno ou IDs..."
             className="pl-9"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => { changeSearch(e.target.value); }}
           />
         </div>
         <Select
           value={category}
-          onValueChange={(value) => { setCategory(value); setPage(1); }}
+          onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { category: value }); }}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrar por Categoria" />
@@ -352,46 +349,13 @@ export default function Products() {
       </div>
 
       {data && (
-        <div className="flex items-center justify-between px-2 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Página {data.page} de {Math.ceil(data.total / data.limit)}
-            </span>
-            <Select
-              value={String(limit)}
-              onValueChange={(value) => { setLimit(Number(value)); setPage(1); }}
-            >
-              <SelectTrigger className="w-[70px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={String(size)}>{size}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= Math.ceil(data.total / data.limit)}
-            >
-              Próximo
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <DataTablePagination
+          page={data.page}
+          limit={data.limit}
+          total={data.total}
+          onPageChange={setPage}
+          onLimitChange={changeLimit}
+        />
       )}
 
       <CreateProductModal

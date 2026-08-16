@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
-import { Search, RefreshCw, ShoppingCart, MoreHorizontal, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, RefreshCw, ShoppingCart, MoreHorizontal, AlertTriangle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi, getFriendlyError } from '@/services/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useTableFilters } from '@/hooks/useTableFilters';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
 import { formatCurrency, formatDate, statusLabel, sourceLabel, storefrontLabel, paymentMethodLabel, effectiveOrderStatus, utmSourceLabel, utmMediumLabel, capitalizeWords } from '@/lib/formatters';
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import DataTablePagination from '@/components/DataTablePagination';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -60,11 +61,8 @@ export default function Orders() {
   const admin = isAdmin(currentUser?.role);
   const qc = useQueryClient();
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebounce(search, 500);
+  const { page, limit, search, debouncedSearch, filter, setPage, changeSearch, changeLimit, changeFilter } = useTableFilters<{ status: string }>();
+  const statusFilter = filter?.status ?? 'all';
 
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -139,7 +137,6 @@ export default function Orders() {
     setCancellingId(null);
   }
 
-  const totalPages = data ? Math.ceil(data.total / limit) : 1;
   const orders = data?.orders || [];
 
   return (
@@ -156,12 +153,12 @@ export default function Orders() {
             placeholder="Pesquisar por cliente ou ID..."
             className="pl-9"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => { changeSearch(e.target.value); }}
           />
         </div>
         <Select
           value={statusFilter}
-          onValueChange={(value) => { setStatusFilter(value); setPage(1); }}
+          onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { status: value }); }}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrar por Status" />
@@ -299,46 +296,13 @@ export default function Orders() {
       </div>
 
       {data && (
-        <div className="flex items-center justify-between px-2 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Página {data.page} de {Math.ceil(data.total / data.limit)}
-            </span>
-            <Select
-              value={String(limit)}
-              onValueChange={(value) => { setLimit(Number(value)); setPage(1); }}
-            >
-              <SelectTrigger className="w-[70px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 20, 50].map((size) => (
-                  <SelectItem key={size} value={String(size)}>{size}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= Math.ceil(data.total / data.limit)}
-            >
-              Próximo
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <DataTablePagination
+          page={data.page}
+          limit={data.limit}
+          total={data.total}
+          onPageChange={setPage}
+          onLimitChange={changeLimit}
+        />
       )}
 
       <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>

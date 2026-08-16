@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Search, Plus, MoreHorizontal, AlertTriangle, UsersIcon, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, Plus, MoreHorizontal, AlertTriangle, UsersIcon, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi, getFriendlyError } from '@/services/api';
 import type { User, CreateUserPayload, UpdateUserPayload, GetUsersResponse } from '@/types';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useTableFilters } from '@/hooks/useTableFilters';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
 import { formatDate, roleLabel } from '@/lib/formatters';
@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import DataTablePagination from '@/components/DataTablePagination';
 import { Label } from '@/components/ui/label';
 
 function RoleBadge({ role }: { role: string }) {
@@ -46,11 +47,8 @@ export default function Users() {
   const admin = isAdmin(currentUser?.role);
   const qc = useQueryClient();
 
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const debouncedSearch = useDebounce(search, 500);
+  const { page, limit, search, debouncedSearch, filter, setPage, changeSearch, changeLimit, changeFilter } = useTableFilters<{ role: string }>();
+  const roleFilter = filter?.role ?? 'all';
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -108,7 +106,6 @@ export default function Users() {
     ),
   });
 
-  const totalPages = data ? Math.ceil(data.total / limit) : 1;
   const users = data?.users || [];
 
   function handleEditClick(user: User) {
@@ -151,12 +148,12 @@ export default function Users() {
             placeholder="Pesquisar por nome ou email..."
             className="pl-9"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => { changeSearch(e.target.value); }}
           />
         </div>
         <Select
           value={roleFilter}
-          onValueChange={(value) => { setRoleFilter(value); setPage(1); }}
+          onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { role: value }); }}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrar por Função" />
@@ -263,46 +260,13 @@ export default function Users() {
           </Table>
 
           {data && (
-            <div className="flex items-center justify-between px-2 shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  Página {data.page} de {Math.ceil(data.total / data.limit)}
-                </span>
-                <Select
-                  value={String(limit)}
-                  onValueChange={(value) => { setLimit(Number(value)); setPage(1); }}
-                >
-                  <SelectTrigger className="w-[70px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[10, 20, 50].map((size) => (
-                      <SelectItem key={size} value={String(size)}>{size}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= Math.ceil(data.total / data.limit)}
-                >
-                  Próximo
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <DataTablePagination
+              page={data.page}
+              limit={data.limit}
+              total={data.total}
+              onPageChange={setPage}
+              onLimitChange={changeLimit}
+            />
           )}
         </>
       )}
