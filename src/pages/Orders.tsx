@@ -40,6 +40,7 @@ const statusBadgeClass: Record<string, string> = {
   closed: 'bg-cyan-100 text-cyan-800 hover:bg-cyan-100 border-transparent',
   delivered: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
   cancelled: '',
+  voided: 'bg-red-100 text-red-800 hover:bg-red-100 border-transparent',
   pending: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
 };
 

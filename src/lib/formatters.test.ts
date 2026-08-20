@@ -118,6 +118,16 @@ describe('rótulos novos', () => {
     expect(effectiveOrderStatus({ status: 'MARKED_AS_FULFILLED' }).label).toBe('Marcado como Concluído');
   });
 
+  it('prioriza estornado/reembolsado sobre completed_at', () => {
+    expect(effectiveOrderStatus({ status: 'voided', completed_at: 'x' })).toEqual({ key: 'voided', label: 'Estornado' });
+    expect(effectiveOrderStatus({ status: 'refunded', completed_at: 'x' }).label).toBe('Reembolsado');
+    expect(effectiveOrderStatus({ status: 'VOIDED', completed_at: 'x' }).label).toBe('Estornado');
+  });
+
+  it('traduz PACKED', () => {
+    expect(statusLabel('PACKED')).toBe('Empacotado');
+  });
+
   it('normaliza status cancelado antes da linha do tempo', () => {
     expect(effectiveOrderStatus({ status: 'CANCELED' })).toEqual({ key: 'cancelled', label: 'Cancelado' });
     expect(effectiveOrderStatus({ status: 'cancelled', paid_at: 'x' }).label).toBe('Cancelado');

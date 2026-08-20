@@ -62,6 +62,8 @@ export const statusLabels: Record<string, string> = {
   CANCELED: 'Cancelado',
   refunded: 'Reembolsado',
   voided: 'Estornado',
+  PACKED: 'Empacotado',
+  packed: 'Empacotado',
   DISPATCHED: 'Despachado',
   UNPACKED: 'Empacotando',
   MARKED_AS_FULFILLED: 'Marcado como Concluído',
@@ -214,6 +216,10 @@ export interface OrderStatusLike {
 export function effectiveOrderStatus(order: OrderStatusLike): { key: string; label: string } {
   if (order.status === 'CANCELED' || order.status === 'cancelled') {
     return { key: 'cancelled', label: 'Cancelado' };
+  }
+  const normalizedStatus = order.status.toLowerCase();
+  if (normalizedStatus === 'voided' || normalizedStatus === 'refunded') {
+    return { key: 'voided', label: statusLabel(normalizedStatus) };
   }
   if (order.cancelled_at) return { key: 'cancelled', label: 'Cancelado' };
   if (order.completed_at) return { key: 'delivered', label: 'Entregue' };
