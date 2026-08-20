@@ -61,11 +61,11 @@ export default function VariantPicker({ value, onSelect, placeholder = 'Buscar p
           aria-expanded={open}
           className="w-full justify-between font-normal h-10 truncate"
         >
-          {value ? `${value.product_name} — ${value.variant_name} · ${formatCurrency(value.price)}` : placeholder}
+          {value ? `${value.product_name} - ${formatCurrency(value.price)}` : placeholder}
           <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[320px] p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[400px] p-0" align="start">
         <Command shouldFilter={false}>
           <div className="flex items-center border-b px-3">
             <Search className="h-4 w-4 text-muted-foreground" />
