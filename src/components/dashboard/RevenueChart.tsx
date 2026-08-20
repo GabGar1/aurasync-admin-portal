@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, formatDateOnly } from '@/lib/formatters';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { RevenueTrendItem } from '@/types';
 
@@ -10,6 +10,10 @@ interface RevenueChartProps {
 }
 
 export default function RevenueChart({ data, isLoading }: RevenueChartProps) {
+  const maxRevenue = Math.max(...(data ?? []).map((d) => d.revenue), 0);
+  const yMax = Math.ceil(maxRevenue / 500) * 500 || 500;
+  const yTicks = Array.from({ length: yMax / 500 + 1 }, (_, i) => i * 500);
+
   return (
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
@@ -38,8 +42,18 @@ export default function RevenueChart({ data, isLoading }: RevenueChartProps) {
                 }}
                 fontSize={12}
               />
-              <YAxis tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} fontSize={12} />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} />
+              <YAxis
+                domain={[0, yMax]}
+                ticks={yTicks}
+                tickFormatter={(v: number) =>
+                  v === 0 ? 'R$0' : v < 1000 ? `R$${v}` : `R$${(v / 1000).toFixed(1).replace('.', ',')}k`
+                }
+                fontSize={12}
+              />
+              <Tooltip
+                labelFormatter={(d: string) => formatDateOnly(d)}
+                formatter={(value: number) => [formatCurrency(value), 'Receita']}
+              />
               <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="url(#revenueGradient)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
