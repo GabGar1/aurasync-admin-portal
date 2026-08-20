@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Loader2, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
@@ -33,14 +33,16 @@ export default function SimulateCostDialog({ open, onOpenChange }: Props) {
     onError: (err) => toast.error(`Falha ao simular: ${getFriendlyError(err)}`),
   });
 
+  const resetSimulation = useRef(simulateMutation.reset).current;
+
   useEffect(() => {
     if (!open) {
       setVariant(null);
       setUnitPrice('');
       setQuantity('1');
-      simulateMutation.reset();
+      resetSimulation();
     }
-  }, [open, simulateMutation]);
+  }, [open, resetSimulation]);
 
   const result: CostSimulateResponse | undefined = simulateMutation.data;
 
