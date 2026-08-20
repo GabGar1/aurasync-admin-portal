@@ -10,14 +10,6 @@ interface OrdersChartsProps {
   isLoading: boolean;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  open: '#3b82f6',
-  paid: '#f59e0b',
-  shipped: '#06b6d4',
-  closed: '#22c55e',
-  cancelled: '#ef4444',
-};
-
 export default function OrdersCharts({ byHour, byStatus, isLoading }: OrdersChartsProps) {
   const busiestHour = byHour?.reduce((max, h) => (h.orders > max.orders ? h : max), byHour?.[0] ?? { hour: 0, orders: 0, revenue: 0 });
 
@@ -38,7 +30,7 @@ export default function OrdersCharts({ byHour, byStatus, isLoading }: OrdersChar
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="hour" tickFormatter={(h: number) => `${h}h`} fontSize={12} />
                 <YAxis fontSize={12} />
-                <Tooltip />
+                <Tooltip formatter={(value: number) => [value, 'Pedidos']} labelFormatter={(hour) => `${hour}h`} />
                 <Bar dataKey="orders" radius={[4, 4, 0, 0]}>
                   {byHour.map((entry, index) => (
                     <Cell key={index} fill={entry.hour === busiestHour?.hour ? 'hsl(var(--primary))' : 'hsl(var(--primary) / 0.3)'} />
@@ -63,11 +55,11 @@ export default function OrdersCharts({ byHour, byStatus, isLoading }: OrdersChar
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie data={byStatus} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={80} innerRadius={50} label={({ status, count }) => `${statusLabel(status)}: ${count}`}>
-                  {byStatus.map((entry) => (
-                    <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || '#888'} />
+                  {byStatus.map((entry, i) => (
+                    <Cell key={entry.status} fill={`hsl(${i * 60}, 60%, 60%)`} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value: number, name: string) => [value, statusLabel(name)]} />
               </PieChart>
             </ResponsiveContainer>
           )}
