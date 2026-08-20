@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, Fragment } from "react";
+import { useState, useMemo, useCallback, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, getFriendlyError } from "@/services/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -124,14 +124,6 @@ export default function Products() {
   }, [data, stockSort]);
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (debouncedSearch) {
-      setExpandedRows(new Set(sortedProducts.map((p) => p.id)));
-    } else {
-      setExpandedRows(new Set());
-    }
-  }, [debouncedSearch, sortedProducts]);
 
   function toggleRow(id: string) {
     setExpandedRows((prev) => {
