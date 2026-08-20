@@ -36,7 +36,7 @@ export default function Layout() {
     <SidebarProvider defaultOpen={true} className="h-full">
       <Sidebar collapsible="icon">
         <SidebarHeader className="h-16 border-b flex items-center gap-2 px-4">
-          <img src="./logo_nome.png" alt="AuraSync" className="h-8 group-data-[collapsible=icon]:hidden" />
+          <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">AuraSync</span>
           <SidebarTrigger className="ml-auto" />
         </SidebarHeader>
         <SidebarContent>
