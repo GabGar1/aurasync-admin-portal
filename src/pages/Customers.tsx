@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, AlertTriangle, UsersIcon } from 'lucide-react';
+import { Search, AlertTriangle, UsersIcon, Plus } from 'lucide-react';
 import { customersApi } from '@/services/api';
 import { useTableFilters } from '@/hooks/useTableFilters';
 import { formatCurrency, formatDate } from '@/lib/formatters';
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import DataTablePagination from '@/components/DataTablePagination';
 import CustomerDetailDrawer from '@/components/customers/CustomerDetailDrawer';
+import CreateCustomerDialog from '@/components/sales/CreateCustomerDialog';
 import type { Customer } from '@/types';
 
 export default function Customers() {
@@ -20,6 +21,7 @@ export default function Customers() {
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['customers', page, limit, debouncedSearch],
@@ -54,6 +56,10 @@ export default function Customers() {
             onChange={(e) => changeSearch(e.target.value)}
           />
         </div>
+        <Button onClick={() => setCustomerDialogOpen(true)} className="shrink-0">
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar cliente
+        </Button>
       </div>
 
       <div>
@@ -122,6 +128,12 @@ export default function Customers() {
           onLimitChange={changeLimit}
         />
       ) : null}
+
+      <CreateCustomerDialog
+        open={customerDialogOpen}
+        onOpenChange={setCustomerDialogOpen}
+        onCreated={() => setCustomerDialogOpen(false)}
+      />
 
       <CustomerDetailDrawer open={detailOpen} onOpenChange={setDetailOpen} customer={selectedCustomer} />
     </div>
