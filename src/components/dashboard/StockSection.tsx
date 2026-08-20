@@ -29,7 +29,6 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Produto</TableHead>
-                      <TableHead>Variante</TableHead>
                       <TableHead>SKU</TableHead>
                       <TableHead className="text-right">Estoque</TableHead>
                     </TableRow>
@@ -38,7 +37,6 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
                     {data.low_stock.slice(0, 15).map((item, i) => (
                       <TableRow key={i}>
                         <TableCell className="font-medium">{item.product_name}</TableCell>
-                        <TableCell>{item.variant_name || '-'}</TableCell>
                         <TableCell>{item.sku || '-'}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant={item.stock <= 5 ? 'destructive' : 'secondary'}>{item.stock}</Badge>
@@ -47,7 +45,7 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
                     ))}
                     {data.low_stock.length > 15 && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-xs text-muted-foreground">
+                        <TableCell colSpan={3} className="text-center text-xs text-muted-foreground">
                           +{data.low_stock.length - 15} itens não exibidos
                         </TableCell>
                       </TableRow>
@@ -69,15 +67,13 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Produto</TableHead>
-                      <TableHead>Variante</TableHead>
                       <TableHead className="text-right">Estoque</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.no_sales_30d.map((item, i) => (
+                    {[...data.no_sales_30d].sort((a, b) => b.stock - a.stock).map((item, i) => (
                       <TableRow key={i}>
                         <TableCell className="font-medium">{item.product_name}</TableCell>
-                        <TableCell>{item.variant_name || '-'}</TableCell>
                         <TableCell className="text-right">{item.stock}</TableCell>
                       </TableRow>
                     ))}
@@ -135,7 +131,6 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Produto</TableHead>
-                      <TableHead>Variante</TableHead>
                       <TableHead className="text-right">Estoque</TableHead>
                       <TableHead className="text-right">Dias sem venda</TableHead>
                     </TableRow>
@@ -144,7 +139,6 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
                     {data.dead_stock.map((item, i) => (
                       <TableRow key={i}>
                         <TableCell className="font-medium">{item.product_name}</TableCell>
-                        <TableCell>{item.variant_name || '-'}</TableCell>
                         <TableCell className="text-right">{item.stock}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant={item.days_without_sale > 90 ? 'destructive' : 'secondary'}>{item.days_without_sale}d</Badge>
