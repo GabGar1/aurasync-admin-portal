@@ -9,6 +9,13 @@ function toLocalDate(date: Date): string {
   return format(date, 'yyyy-MM-dd');
 }
 
+export function buildDashboardParams(range: DateRange): { days?: number; start_date?: string; end_date?: string } {
+  if (range.from && range.to) {
+    return { start_date: toLocalDate(range.from), end_date: toLocalDate(range.to) };
+  }
+  return { days: 30 };
+}
+
 export function useDashboard() {
   const [range, setRange] = useState<DateRange>({ from: null, to: null });
   const [refetchKey, setRefetchKey] = useState(0);
@@ -17,16 +24,7 @@ export function useDashboard() {
     setRefetchKey((k) => k + 1);
   }, []);
 
-  const params = useCallback(() => {
-    const base: { days?: number; start_date?: string; end_date?: string } = { days: 30 };
-    if (range.from && range.to) {
-      base.start_date = toLocalDate(range.from);
-      base.end_date = toLocalDate(range.to);
-      const diffDays = Math.round((range.to.getTime() - range.from.getTime()) / 86400000) + 1;
-      base.days = diffDays;
-    }
-    return base;
-  }, [range]);
+  const params = useCallback(() => buildDashboardParams(range), [range]);
 
   const orders = useQuery({
     queryKey: ['dashboard-orders', range, refetchKey],
