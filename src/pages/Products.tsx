@@ -168,18 +168,16 @@ export default function Products() {
             ))}
           </SelectContent>
         </Select>
+        <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="shrink-0">
+          <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
+          Sincronizar Nuvemshop
+        </Button>
       </div>
 
       <div className="flex items-center justify-between shrink-0">
         <p className="text-sm text-muted-foreground">
           {data ? `${data.total} resultado${data.total !== 1 ? "s" : ""}` : ""}
         </p>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
-            Sincronizar Nuvemshop
-          </Button>
-        </div>
       </div>
 
       <div>
