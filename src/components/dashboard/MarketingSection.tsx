@@ -11,6 +11,14 @@ interface MarketingSectionProps {
   isLoading: boolean;
 }
 
+function utmCampaignLabel(camp: { campaign: string | null; source?: string | null; medium?: string | null }): string {
+  if (camp.campaign) return camp.campaign;
+  if (camp.source || camp.medium) {
+    return [utmSourceLabel(camp.source), utmMediumLabel(camp.medium)].filter(Boolean).join(' / ');
+  }
+  return 'Orgânico/Direto';
+}
+
 export default function MarketingSection({ data, isLoading }: MarketingSectionProps) {
   const campaignTotalRevenue = data?.by_campaign?.reduce((s, c) => s + c.revenue, 0) ?? 0;
   const campaignTotalOrders = data?.by_campaign?.reduce((s, c) => s + c.orders, 0) ?? 0;
@@ -107,7 +115,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
                   <TableBody>
                     {data.by_campaign.map((camp, i) => (
                       <TableRow key={i}>
-                        <TableCell>{camp.campaign || 'N/A'}</TableCell>
+                        <TableCell>{utmCampaignLabel(camp)}</TableCell>
                         <TableCell className="text-right">{camp.orders}</TableCell>
                         <TableCell className="text-right">{formatCurrency(camp.revenue)}</TableCell>
                         <TableCell className={`text-right font-medium ${camp.aov > overallAOV ? 'text-green-600' : ''}`}>{formatCurrency(camp.aov)}</TableCell>

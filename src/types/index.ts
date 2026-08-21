@@ -253,6 +253,8 @@ export interface ProvinceStats {
 
 export interface CampaignStats {
   campaign: string | null;
+  source: string | null;
+  medium: string | null;
   orders: number;
   revenue: number;
   aov: number;
