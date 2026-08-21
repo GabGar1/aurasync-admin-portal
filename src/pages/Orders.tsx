@@ -55,6 +55,8 @@ const paymentBadgeClass: Record<string, string> = {
   under_review: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
 };
 
+const orderStatuses = ['PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED'] as const;
+
 const fulfillmentFilterOptions: { value: string; label: string }[] = [
   { value: 'pending', label: 'Pendente' },
   { value: 'unpacked', label: 'Empacotando' },
