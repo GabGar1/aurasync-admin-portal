@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -25,20 +25,55 @@ const presets: { label: string; days: number }[] = [
   { label: '90 dias', days: 90 },
 ];
 
+function sameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
 export default function DateRangePicker({ range, onRangeChange }: Props) {
   const [open, setOpen] = useState(false);
+  const [pendingStart, setPendingStart] = useState<Date | null>(null);
 
   function applyPreset(days: number) {
     const to = new Date();
     const from = new Date();
     from.setDate(to.getDate() - (days - 1));
     onRangeChange({ from, to });
+    setPendingStart(null);
     setOpen(false);
   }
 
+  function handleSelect(selected: { from?: Date | null; to?: Date | null } | undefined) {
+    if (!selected?.from) return;
+    if (selected.from && selected.to) {
+      onRangeChange({ from: selected.from, to: selected.to });
+      setPendingStart(null);
+      setOpen(false);
+      return;
+    }
+    if (pendingStart && !sameDay(pendingStart, selected.from)) {
+      const from = selected.from < pendingStart ? selected.from : pendingStart;
+      const to = selected.from < pendingStart ? pendingStart : selected.from;
+      onRangeChange({ from, to });
+      setPendingStart(null);
+      setOpen(false);
+      return;
+    }
+    onRangeChange({ from: selected.from, to: selected.from });
+    setPendingStart(selected.from);
+  }
+
+  const isSingleDay = range.from && range.to && sameDay(range.from, range.to);
   const label = range.from && range.to
-    ? `${format(range.from, 'dd/MM/yyyy', { locale: ptBR })} — ${format(range.to, 'dd/MM/yyyy', { locale: ptBR })}`
+    ? isSingleDay
+      ? format(range.from, 'dd/MM/yyyy', { locale: ptBR })
+      : `${format(range.from, 'dd/MM/yyyy', { locale: ptBR })} — ${format(range.to, 'dd/MM/yyyy', { locale: ptBR })}`
     : 'Selecionar período';
+
+  const selectedValue = range.from && range.to
+    ? { from: range.from, to: range.to }
+    : pendingStart
+      ? { from: pendingStart, to: pendingStart }
+      : undefined;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -55,15 +90,15 @@ export default function DateRangePicker({ range, onRangeChange }: Props) {
               {preset.label}
             </Button>
           ))}
+          <Button variant="ghost" size="sm" onClick={() => { onRangeChange({ from: null, to: null }); setPendingStart(null); setOpen(false); }}>
+            <X className="h-3 w-3 mr-1" />
+            Limpar
+          </Button>
         </div>
         <Calendar
           mode="range"
-          selected={range.from && range.to ? { from: range.from, to: range.to } : undefined}
-          onSelect={(selected) => {
-            if (selected?.from && selected?.to) {
-              onRangeChange({ from: selected.from, to: selected.to });
-            }
-          }}
+          selected={selectedValue}
+          onSelect={handleSelect}
           numberOfMonths={2}
           locale={ptBR}
         />
