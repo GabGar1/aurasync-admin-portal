@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
+import { defaultScheduler } from '@tanstack/query-core';
 import { notifyManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SimulateCostDialog from './SimulateCostDialog';
 
@@ -13,7 +14,7 @@ describe('SimulateCostDialog', () => {
   it('não entra em loop infinito ao montar fechado', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     let schedulerCalls = 0;
-    const originalScheduler = notifyManager.scheduler;
+    const originalScheduler = defaultScheduler;
     notifyManager.setScheduler((cb) => {
       schedulerCalls += 1;
       setTimeout(cb, 1);
