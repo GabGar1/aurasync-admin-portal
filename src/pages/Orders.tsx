@@ -55,7 +55,14 @@ const paymentBadgeClass: Record<string, string> = {
   under_review: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
 };
 
-const orderStatuses = ['PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED'] as const;
+const fulfillmentFilterOptions: { value: string; label: string }[] = [
+  { value: 'pending', label: 'Pendente' },
+  { value: 'unpacked', label: 'Empacotando' },
+  { value: 'dispatched', label: 'Despachado' },
+  { value: 'delivered', label: 'Entregue' },
+  { value: 'marked_as_fulfilled', label: 'Marcado como Concluído' },
+  { value: 'cancelled', label: 'Cancelado' },
+];
 
 export default function Orders() {
   const { getUser } = useAuth();
@@ -63,8 +70,8 @@ export default function Orders() {
   const admin = isAdmin(currentUser?.role);
   const qc = useQueryClient();
 
-  const { page, limit, search, debouncedSearch, filter, setPage, changeSearch, changeLimit, changeFilter } = useTableFilters<{ status: string }>();
-  const statusFilter = filter?.status ?? 'all';
+  const { page, limit, search, debouncedSearch, filter, setPage, changeSearch, changeLimit, changeFilter } = useTableFilters<{ fulfillment_status: string }>();
+  const fulfillmentFilter = filter?.fulfillment_status ?? 'all';
 
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -73,10 +80,10 @@ export default function Orders() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const { data, isLoading, isError, refetch } = useQuery<GetOrdersResponse>({
-    queryKey: ['orders', page, limit, statusFilter, debouncedSearch],
+    queryKey: ['orders', page, limit, fulfillmentFilter, debouncedSearch],
     queryFn: () => ordersApi.getAll({
       page, limit,
-      status: statusFilter !== 'all' ? statusFilter : undefined,
+      fulfillment_status: fulfillmentFilter !== 'all' ? fulfillmentFilter : undefined,
       search: debouncedSearch || undefined,
     }),
     placeholderData: (previousData) => previousData,
@@ -159,19 +166,17 @@ export default function Orders() {
           />
         </div>
         <Select
-          value={statusFilter}
-          onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { status: value }); }}
+          value={fulfillmentFilter}
+          onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { fulfillment_status: value }); }}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrar por Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="PENDING">Pendente</SelectItem>
-            <SelectItem value="PAID">Pago</SelectItem>
-            <SelectItem value="SHIPPED">Enviado</SelectItem>
-            <SelectItem value="DELIVERED">Entregue</SelectItem>
-            <SelectItem value="CANCELED">Cancelado</SelectItem>
+            {fulfillmentFilterOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

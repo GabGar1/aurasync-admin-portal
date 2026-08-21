@@ -150,7 +150,7 @@ export const productsApi = {
 };
 
 export const ordersApi = {
-  getAll: async (params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<GetOrdersResponse> => {
+  getAll: async (params?: { page?: number; limit?: number; fulfillment_status?: string; search?: string }): Promise<GetOrdersResponse> => {
     const response = await api.get<GetOrdersResponse>('/orders', { params });
     return response.data;
   },
