@@ -2,7 +2,6 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   SidebarProvider,
   Sidebar,
-  SidebarHeader,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
@@ -35,10 +34,10 @@ export default function Layout() {
   return (
     <SidebarProvider defaultOpen={true} className="h-full">
       <Sidebar collapsible="icon">
-        <SidebarHeader className="h-16 border-b flex items-center gap-2 px-4">
-          <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">AuraSync</span>
+        <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <span className="truncate text-lg font-semibold group-data-[collapsible=icon]:hidden">AuraSync</span>
           <SidebarTrigger className="ml-auto" />
-        </SidebarHeader>
+        </div>
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
