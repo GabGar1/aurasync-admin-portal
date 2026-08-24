@@ -25,10 +25,26 @@ const api = axios.create({
   baseURL,
 });
 
+const csrfRetriedRequests = new WeakSet<object>();
+
+api.interceptors.request.use(async (config) => {
+  const method = (config.method ?? 'get').toUpperCase();
+  const isSafeMethod = ['GET', 'HEAD', 'OPTIONS'].includes(method);
+  const isLogin = config.url?.includes('/auth/login');
+  const hasHeader = config.headers.get('X-CSRF-TOKEN');
+  if (isSafeMethod || isLogin || hasHeader || csrfRetriedRequests.has(config)) return config;
+
+  csrfRetriedRequests.add(config);
+  const token = await ensureCsrfHeaderValue();
+  if (token) config.headers.set('X-CSRF-TOKEN', token);
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401 && !error.config?.url?.includes('/login') && !error.config?.url?.includes('/auth/')) {
+      resetCsrfTokenCache();
       window.location.href = '/login';
     }
     if (error?.response?.status === 403 && ['GET', 'HEAD', 'OPTIONS'].includes((error.config?.method ?? '').toUpperCase())) {
@@ -47,6 +63,10 @@ export function extractCookieValue(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const row = document.cookie.split('; ').find((part) => part.startsWith(`${name}=`));
   return row ? row.slice(name.length + 1) : null;
+}
+
+export function resetCsrfTokenCache(): void {
+  csrfTokenCache = null;
 }
 
 async function ensureCsrfHeaderValue(): Promise<string | undefined> {

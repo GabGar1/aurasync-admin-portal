@@ -12,12 +12,16 @@ type WebSocketEvent = {
 const MAX_RETRIES = 10;
 const BASE_DELAY = 1000;
 
-export function resolveWsUrl(configured: string | undefined, protocol: string, host: string): string {
+export function resolveWsUrl(configured: string | undefined, apiUrl: string | undefined, protocol: string, host: string): string {
   if (configured) return configured;
+  if (apiUrl?.startsWith('http')) {
+    const url = new URL(apiUrl);
+    return `${url.protocol === 'https:' ? 'wss:' : 'ws:'}//${url.host}`;
+  }
   return protocol === 'https:' ? `wss://${host}` : 'ws://localhost:3333';
 }
 
-const WS_URL = resolveWsUrl(import.meta.env.VITE_WS_URL, window.location.protocol, window.location.host);
+const WS_URL = resolveWsUrl(import.meta.env.VITE_WS_URL, import.meta.env.VITE_API_URL, window.location.protocol, window.location.host);
 
 export const useWebSocket = (eventName: WebSocketEvent['event'], onMessageReceived: () => void) => {
   const { isAuthenticated, logout } = useAuth();
