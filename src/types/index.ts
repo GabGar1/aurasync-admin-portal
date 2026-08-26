@@ -185,12 +185,14 @@ export interface CreateUserPayload {
   password: string;
   first_name: string;
   last_name: string;
+  role: 'ADMIN' | 'EMPLOYEE' | 'SUPER_ADMIN';
 }
 
 export interface UpdateUserPayload {
   first_name?: string;
   last_name?: string;
   status?: boolean;
+  role?: 'ADMIN' | 'EMPLOYEE' | 'SUPER_ADMIN';
 }
 
 export interface ChangePasswordPayload {
