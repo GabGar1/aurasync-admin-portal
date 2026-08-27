@@ -306,6 +306,7 @@ export default function Users() {
           <CreateUserForm
             onSubmit={(payload) => createMutation.mutate(payload)}
             isPending={createMutation.isPending}
+            isSuperAdmin={isSuperAdmin}
           />
         </DialogContent>
       </Dialog>
@@ -321,6 +322,7 @@ export default function Users() {
               user={editingUser}
               onSubmit={(payload) => updateMutation.mutate({ id: editingUser.id, payload })}
               isPending={updateMutation.isPending}
+              isSuperAdmin={isSuperAdmin}
             />
           )}
         </DialogContent>
@@ -361,11 +363,12 @@ export default function Users() {
   );
 }
 
-function CreateUserForm({ onSubmit, isPending }: { onSubmit: (payload: CreateUserPayload) => void; isPending: boolean }) {
+function CreateUserForm({ onSubmit, isPending, isSuperAdmin }: { onSubmit: (payload: CreateUserPayload) => void; isPending: boolean; isSuperAdmin: boolean }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [role, setRole] = useState<'ADMIN' | 'EMPLOYEE' | 'SUPER_ADMIN'>('EMPLOYEE');
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -375,6 +378,7 @@ function CreateUserForm({ onSubmit, isPending }: { onSubmit: (payload: CreateUse
       password,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
+      ...(isSuperAdmin && { role }),
     });
   }
 
@@ -423,6 +427,21 @@ function CreateUserForm({ onSubmit, isPending }: { onSubmit: (payload: CreateUse
           required
         />
       </div>
+      {isSuperAdmin && (
+        <div className="space-y-2">
+          <Label htmlFor="create-role">Função</Label>
+          <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
+            <SelectTrigger id="create-role">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EMPLOYEE">Funcionário</SelectItem>
+              <SelectItem value="ADMIN">Admin</SelectItem>
+              <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <DialogFooter>
         <Button type="submit" disabled={isPending || !email.trim() || !password || password.length < 8 || !firstName.trim() || !lastName.trim()}>
           {isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Criando...</> : 'Criar'}
@@ -432,10 +451,11 @@ function CreateUserForm({ onSubmit, isPending }: { onSubmit: (payload: CreateUse
   );
 }
 
-function EditUserForm({ user, onSubmit, isPending }: { user: User; onSubmit: (payload: UpdateUserPayload) => void; isPending: boolean }) {
+function EditUserForm({ user, onSubmit, isPending, isSuperAdmin }: { user: User; onSubmit: (payload: UpdateUserPayload) => void; isPending: boolean; isSuperAdmin: boolean }) {
   const [firstName, setFirstName] = useState(user.first_name);
   const [lastName, setLastName] = useState(user.last_name);
   const [status, setStatus] = useState(user.status ? 'active' : 'inactive');
+  const [role, setRole] = useState<'ADMIN' | 'EMPLOYEE' | 'SUPER_ADMIN'>(user.role);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -444,6 +464,7 @@ function EditUserForm({ user, onSubmit, isPending }: { user: User; onSubmit: (pa
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       status: status === 'active',
+      ...(isSuperAdmin && { role }),
     });
   }
 
@@ -481,6 +502,21 @@ function EditUserForm({ user, onSubmit, isPending }: { user: User; onSubmit: (pa
           </SelectContent>
         </Select>
       </div>
+      {isSuperAdmin && (
+        <div className="space-y-2">
+          <Label htmlFor="edit-role">Função</Label>
+          <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
+            <SelectTrigger id="edit-role">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EMPLOYEE">Funcionário</SelectItem>
+              <SelectItem value="ADMIN">Admin</SelectItem>
+              <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <DialogFooter>
         <Button type="submit" disabled={isPending || !firstName.trim() || !lastName.trim()}>
           {isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : 'Salvar'}
