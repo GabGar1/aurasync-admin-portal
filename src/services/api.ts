@@ -397,6 +397,7 @@ const SESSION_EXPIRED_MESSAGE = 'Sessão expirada. Faça login novamente.';
 // The API answers in English; every message a user can hit is translated here.
 const errorTranslations: Record<string, string> = {
   'Invalid email or password': 'E-mail ou senha inválidos',
+  'Validation failed': 'Dados inválidos. Verifique os campos e tente novamente.',
   'User not found': 'Usuário não encontrado',
   'Product not found': 'Produto não encontrado',
   'Email already registered': 'E-mail já cadastrado',
@@ -478,7 +479,10 @@ function readErrorMessage(err: unknown): string | undefined {
 export function getFriendlyError(err: unknown): string {
   const raw = readErrorMessage(err);
   const status = (err as ErrorShape)?.response?.status;
+  const translated = raw ? translateError(raw) : undefined;
+  if (translated) return translated;
+  // Unknown 5xx text is never shown: it may carry internal details.
   if (typeof status === 'number' && status >= 500) return INTERNAL_ERROR_MESSAGE;
   if (!raw) return 'Erro desconhecido';
-  return translateError(raw) ?? GENERIC_ERROR_MESSAGE;
+  return GENERIC_ERROR_MESSAGE;
 }

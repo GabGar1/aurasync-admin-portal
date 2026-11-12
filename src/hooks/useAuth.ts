@@ -31,7 +31,7 @@ export function useAuth() {
     }
   };
 
-  const login = useCallback(async (token: string, user: User) => {
+  const login = useCallback(async (user: User) => {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     setIsAuthenticated(true);
     try {

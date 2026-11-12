@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -24,7 +23,6 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -43,8 +41,7 @@ export default function Login() {
     mutationFn: (payload: LoginForm) => authApi.login(payload as LoginPayload),
     onSuccess: (data) => {
       toast.success("Bem-vindo de volta!");
-      login(data.token, data.user);
-      navigate("/");
+      login(data.user); // login() already redirects to "/"
     },
     onError: (error) => {
       form.clearErrors("root");

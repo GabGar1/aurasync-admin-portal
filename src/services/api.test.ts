@@ -58,6 +58,16 @@ describe('getFriendlyError', () => {
     expect(getFriendlyError({ response: { status: 500, data: { error: 'garbage interno' } } })).toBe('Erro interno do servidor');
   });
 
+  it('mostra a tradução de erros 5xx conhecidos (ex.: Nuvemshop fora do ar)', () => {
+    expect(getFriendlyError({ response: { status: 502, data: { error: 'Failed to integrate with Nuvemshop' } } }))
+      .toBe('Falha na comunicação com a Nuvemshop');
+  });
+
+  it('traduz falhas de validação da API', () => {
+    expect(getFriendlyError({ response: { status: 400, data: { error: 'Validation failed', details: [] } } }))
+      .toBe('Dados inválidos. Verifique os campos e tente novamente.');
+  });
+
   it('retorna mensagem genérica PT para erros sem tradução', () => {
     expect(getFriendlyError({ response: { data: { error: 'Unknown backend message' } } })).toBe('Ocorreu um erro inesperado. Tente novamente.');
   });

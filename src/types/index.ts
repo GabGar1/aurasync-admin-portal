@@ -13,8 +13,8 @@ export interface LoginPayload {
   password: string;
 }
 
+/** The session JWT is set as an httpOnly cookie and is never part of the body. */
 export interface LoginResponse {
-  token: string;
   user: User;
 }
 
