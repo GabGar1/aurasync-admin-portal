@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, getFriendlyError } from "@/services/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useTableFilters } from "@/hooks/useTableFilters";
+import { useAuth } from "@/hooks/useAuth";
+import { can } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/formatters";
 import { totalStock, sortProductsByStock } from "@/lib/stock";
 import { toast } from "sonner";
@@ -75,6 +77,8 @@ const categories = ["Brincos", "Anéis", "Braceletes", "Chokers", "Conjuntos", "
 
 export default function Products() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const canSync = can(user?.role, "products.sync");
 
   const { page, limit, search, debouncedSearch, filter, setPage, changeSearch, changeLimit, changeFilter } = useTableFilters<{ category: string }>();
   const category = filter?.category ?? 'all';
@@ -168,10 +172,12 @@ export default function Products() {
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="shrink-0">
-          <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
-          Sincronizar com a Nuvemshop
-        </Button>
+        {canSync ? (
+          <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="shrink-0">
+            <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
+            Sincronizar com a Nuvemshop
+          </Button>
+        ) : null}
       </div>
 
       <div className="flex items-center justify-between shrink-0">

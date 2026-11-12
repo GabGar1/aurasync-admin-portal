@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Search, Plus, MoreHorizontal, AlertTriangle, UsersIcon, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi, getFriendlyError } from '@/services/api';
-import type { User, CreateUserPayload, UpdateUserPayload, GetUsersResponse, ChangePasswordPayload } from '@/types';
+import type { User, CreateUserPayload, UpdateUserPayload, GetUsersResponse, ResetPasswordPayload } from '@/types';
 import { useTableFilters } from '@/hooks/useTableFilters';
 import { useAuth } from '@/hooks/useAuth';
-import { isAdmin } from '@/lib/utils';
+import { can } from '@/lib/permissions';
+import PasswordForm from '@/components/PasswordForm';
 import { formatDate, roleLabel } from '@/lib/formatters';
 import { toast } from 'sonner';
 
@@ -42,12 +43,15 @@ function StatusDisplay({ status }: { status: boolean }) {
 }
 
 export default function Users() {
-  const { getUser } = useAuth();
-  const currentUser = getUser();
-  const admin = isAdmin(currentUser?.role);
-  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const { user: currentUser } = useAuth();
+  const admin = can(currentUser?.role, 'users.manage');
+  const isSuperAdmin = can(currentUser?.role, 'users.changeRole');
   function canManageUser(user: User): boolean {
     return admin && (user.role !== 'SUPER_ADMIN' || isSuperAdmin);
+  }
+  /** The API refuses deleting your own account; don't offer it. */
+  function canDeleteUser(user: User): boolean {
+    return canManageUser(user) && user.id !== currentUser?.id;
   }
   const qc = useQueryClient();
 
@@ -113,9 +117,9 @@ export default function Users() {
   });
 
   const passwordMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ChangePasswordPayload }) => usersApi.changePassword(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: ResetPasswordPayload }) => usersApi.resetPassword(id, payload),
     onSuccess: () => {
-      toast.success('Senha alterada com sucesso');
+      toast.success('Senha redefinida. O usuário precisará entrar novamente.');
       setPasswordDialogOpen(false);
       setPasswordUser(null);
     },
@@ -267,14 +271,16 @@ export default function Users() {
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handlePasswordClick(user)}>
-                              Alterar senha
+                              Redefinir senha
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDeleteClick(user)}
-                            >
-                              Remover
-                            </DropdownMenuItem>
+                            {canDeleteUser(user) ? (
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => handleDeleteClick(user)}
+                              >
+                                Excluir
+                              </DropdownMenuItem>
+                            ) : null}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -339,7 +345,7 @@ export default function Users() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Remover
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -348,13 +354,17 @@ export default function Users() {
       <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Alterar senha</DialogTitle>
-            <DialogDescription>Defina a nova senha de {passwordUser?.first_name} {passwordUser?.last_name}</DialogDescription>
+            <DialogTitle>Redefinir senha</DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para {passwordUser?.first_name} {passwordUser?.last_name}. A pessoa será desconectada de todos os dispositivos.
+            </DialogDescription>
           </DialogHeader>
           {passwordUser && (
-            <ChangePasswordForm
+            <PasswordForm
+              requireCurrent={false}
+              submitLabel="Redefinir senha"
               isPending={passwordMutation.isPending}
-              onSubmit={(payload) => passwordMutation.mutate({ id: passwordUser.id, payload })}
+              onSubmit={(values) => passwordMutation.mutate({ id: passwordUser.id, payload: { new_password: values.new_password } })}
             />
           )}
         </DialogContent>
@@ -520,68 +530,6 @@ function EditUserForm({ user, onSubmit, isPending, isSuperAdmin }: { user: User;
       <DialogFooter>
         <Button type="submit" disabled={isPending || !firstName.trim() || !lastName.trim()}>
           {isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : 'Salvar'}
-        </Button>
-      </DialogFooter>
-    </form>
-  );
-}
-
-function ChangePasswordForm({ isPending, onSubmit }: { isPending: boolean; onSubmit: (payload: ChangePasswordPayload) => void }) {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  const valid = currentPassword.length > 0 && newPassword.length >= 8 && newPassword === confirmPassword;
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!valid) return;
-    onSubmit({ current_password: currentPassword, new_password: newPassword });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4 py-4">
-      <div className="space-y-2">
-        <Label htmlFor="password-current">Senha atual</Label>
-        <Input
-          id="password-current"
-          type="password"
-          placeholder="Senha atual"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="password-new">Nova senha</Label>
-        <Input
-          id="password-new"
-          type="password"
-          placeholder="Mínimo 8 caracteres"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          required
-          minLength={8}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="password-confirm">Confirmar nova senha</Label>
-        <Input
-          id="password-confirm"
-          type="password"
-          placeholder="Confirme a nova senha"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-          minLength={8}
-        />
-        {newPassword !== confirmPassword && confirmPassword.length > 0 ? (
-          <p className="text-sm text-destructive">As senhas não coincidem</p>
-        ) : null}
-      </div>
-      <DialogFooter>
-        <Button type="submit" disabled={isPending || !valid}>
-          {isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</> : 'Alterar senha'}
         </Button>
       </DialogFooter>
     </form>

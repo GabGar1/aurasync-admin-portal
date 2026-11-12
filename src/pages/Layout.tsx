@@ -12,24 +12,29 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { sidebarItems } from "@/components/SidebarItems";
-import { isAdmin } from "@/lib/utils";
+import { can } from "@/lib/permissions";
+import { roleLabel } from "@/lib/formatters";
+import ChangeOwnPasswordDialog from "@/components/ChangeOwnPasswordDialog";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, LogOut, User } from "lucide-react";
+import { ChevronDown, KeyRound, LogOut, User } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { getUser, logout } = useAuth();
-  const user = getUser();
+  const { user, logout } = useAuth();
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   return (
     <SidebarProvider defaultOpen={true} className="h-full">
@@ -42,7 +47,7 @@ export default function Layout() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {sidebarItems.filter((item) => !item.adminOnly || isAdmin(user?.role)).map((item) => (
+                {sidebarItems.filter((item) => can(user?.role, item.permission)).map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       isActive={location.pathname === item.url || location.pathname.startsWith(item.url + "/")}
@@ -69,7 +74,16 @@ export default function Layout() {
                 <ChevronDown className="h-3 w-3 text-sidebar-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="top" className="w-48">
+            <DropdownMenuContent align="end" side="top" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <span className="block truncate text-sm">{user?.email}</span>
+                <span className="block text-xs text-muted-foreground">{user ? roleLabel(user.role) : ""}</span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setPasswordOpen(true)}>
+                <KeyRound className="h-4 w-4 mr-2" />
+                Alterar minha senha
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={logout} className="text-destructive">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
@@ -84,6 +98,7 @@ export default function Layout() {
         </main>
         <Toaster />
       </SidebarInset>
+      <ChangeOwnPasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} />
     </SidebarProvider>
   );
 }

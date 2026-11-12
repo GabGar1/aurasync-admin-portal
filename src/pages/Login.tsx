@@ -82,17 +82,19 @@ export default function Login() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>E-mail</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    {/* FormControl must wrap the input itself so the label and error messages are linked to it */}
+                    <div className="relative">
+                      <Mail aria-hidden className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
                         <Input
                           type="email"
+                          autoComplete="email"
                           placeholder="seu@email.com"
                           className="pl-10"
                           {...field}
                         />
-                      </div>
-                    </FormControl>
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -103,17 +105,18 @@ export default function Login() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <div className="relative">
+                      <Lock aria-hidden className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
                         <Input
                           type="password"
-                          placeholder="Senha"
+                          autoComplete="current-password"
+                          placeholder="Sua senha"
                           className="pl-10"
                           {...field}
                         />
-                      </div>
-                    </FormControl>
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

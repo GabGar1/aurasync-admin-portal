@@ -4,7 +4,7 @@ import type {
   LoginPayload, LoginResponse, Product, CreateProductPayload,
   GetProductsResponse, Order, GetOrdersResponse,
   InventoryTransaction, CreateInventoryPayload, GetInventoryResponse,
-  User, CreateUserPayload, UpdateUserPayload, GetUsersResponse, ChangePasswordPayload,
+  User, CreateUserPayload, UpdateUserPayload, GetUsersResponse, ChangePasswordPayload, ResetPasswordPayload,
   OrdersResponse, MarketingResponse, StockResponse, UserStats,
   CostComponent, CostComponentPayload, CostAssociation, CostSimulateInput, CostSimulateResponse,
   ExternalSalePayload, ExternalSaleResult, CreateCustomerPayload,
@@ -47,8 +47,10 @@ api.interceptors.response.use(
       resetCsrfTokenCache();
       window.location.href = '/login';
     }
+    // Pages and menu already follow lib/permissions; a 403 here means the role changed on the server.
+    // Tell the user instead of reloading the whole app; mutations show their own error toast.
     if (error?.response?.status === 403 && ['GET', 'HEAD', 'OPTIONS'].includes((error.config?.method ?? '').toUpperCase())) {
-      window.location.href = '/products';
+      toast.error('Você não tem permissão para acessar este conteúdo.', { id: 'forbidden' });
     }
     if (error?.response?.status === 429 && !error.config?.url?.includes('/auth/login')) {
       toast.error('Muitas tentativas. Tente novamente em instantes.');
@@ -105,6 +107,12 @@ export const authApi = {
     const token = response.data?.csrfToken ?? extractCookieValue('XSRF-TOKEN');
     if (token) csrfTokenCache = token;
     return response.data;
+  },
+  /** Changes the signed-in user's password. The API renews the session cookie, so the CSRF token changes too. */
+  changeMyPassword: async (payload: ChangePasswordPayload): Promise<void> => {
+    await api.put('/auth/me/password', payload);
+    csrfTokenCache = null;
+    await authApi.getCsrfToken().catch(() => undefined);
   },
 };
 
@@ -232,8 +240,9 @@ export const usersApi = {
     await api.delete(`/users/${id}`);
   },
 
-  changePassword: async (id: string, payload: ChangePasswordPayload): Promise<void> => {
-    await api.put(`/users/${id}/password`, payload);
+  /** Admin reset: no current password; signs the user out of every device. */
+  resetPassword: async (id: string, payload: ResetPasswordPayload): Promise<void> => {
+    await api.post(`/users/${id}/reset-password`, payload);
   },
 };
 
@@ -398,6 +407,9 @@ const SESSION_EXPIRED_MESSAGE = 'Sessão expirada. Faça login novamente.';
 const errorTranslations: Record<string, string> = {
   'Invalid email or password': 'E-mail ou senha inválidos',
   'Validation failed': 'Dados inválidos. Verifique os campos e tente novamente.',
+  'You cannot delete your own account': 'Você não pode excluir a sua própria conta',
+  'You cannot deactivate your own account': 'Você não pode desativar a sua própria conta',
+  'Cannot remove the last active SUPER_ADMIN': 'É preciso manter pelo menos um superadministrador ativo',
   'User not found': 'Usuário não encontrado',
   'Product not found': 'Produto não encontrado',
   'Email already registered': 'E-mail já cadastrado',

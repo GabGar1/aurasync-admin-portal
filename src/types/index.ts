@@ -195,8 +195,14 @@ export interface UpdateUserPayload {
   role?: 'ADMIN' | 'EMPLOYEE' | 'SUPER_ADMIN';
 }
 
+/** Changing your own password (PUT /auth/me/password). */
 export interface ChangePasswordPayload {
   current_password: string;
+  new_password: string;
+}
+
+/** Admin reset of someone else's password (POST /users/:id/reset-password). */
+export interface ResetPasswordPayload {
   new_password: string;
 }
 

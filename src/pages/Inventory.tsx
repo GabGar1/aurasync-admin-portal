@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi, getFriendlyError } from '@/services/api';
 import type { CreateInventoryPayload, GetInventoryResponse } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
-import { isAdmin } from '@/lib/utils';
+import { can } from '@/lib/permissions';
 import { formatDate, inventoryTypeLabel } from '@/lib/formatters';
 import { toast } from 'sonner';
 
@@ -25,9 +25,8 @@ const typeBadgeClass: Record<string, string> = {
 };
 
 export default function Inventory() {
-  const { getUser } = useAuth();
-  const currentUser = getUser();
-  const admin = isAdmin(currentUser?.role);
+  const { user } = useAuth();
+  const admin = can(user?.role, 'inventory.adjust');
   const qc = useQueryClient();
 
   const [page, setPage] = useState(1);
