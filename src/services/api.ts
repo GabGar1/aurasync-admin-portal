@@ -392,26 +392,73 @@ export default api;
 export const GENERIC_ERROR_MESSAGE = 'Ocorreu um erro inesperado. Tente novamente.';
 const INTERNAL_ERROR_MESSAGE = 'Erro interno do servidor';
 
+const SESSION_EXPIRED_MESSAGE = 'Sessão expirada. Faça login novamente.';
+
+// The API answers in English; every message a user can hit is translated here.
 const errorTranslations: Record<string, string> = {
-  'Invalid email or password': 'Email ou senha inválidos',
+  'Invalid email or password': 'E-mail ou senha inválidos',
   'User not found': 'Usuário não encontrado',
   'Product not found': 'Produto não encontrado',
-  'Email already registered': 'Email já cadastrado',
+  'Email already registered': 'E-mail já cadastrado',
+  'Order not found': 'Pedido não encontrado',
+  'Order is already canceled': 'Este pedido já está cancelado',
+  'Customer not found': 'Cliente não encontrado',
+  'Subgroup not found': 'Subgrupo não encontrado',
+  'Product not in subgroup': 'O produto não pertence a este subgrupo',
+  'Cost component not found': 'Componente de custo não encontrado',
+  'Association not found': 'Associação não encontrada',
+  'No associations found': 'Nenhuma associação encontrada',
+  'Credit fee tier not found': 'Faixa de parcelamento não encontrada',
+  'Product variant not found': 'Variação de produto não encontrada',
+  'Variant ID is required': 'Informe a variação do produto',
+  'One or more variants were not found': 'Uma ou mais variações não foram encontradas',
+  'Insufficient stock for this transaction': 'Estoque insuficiente para esta movimentação',
+  'SALE transactions must have a negative quantity_changed': 'Vendas devem ter quantidade negativa',
+  'RESTOCK transactions must have a positive quantity_changed': 'Reabastecimentos devem ter quantidade positiva',
+  'end_date cannot be before start_date': 'A data final não pode ser anterior à inicial',
+  'Provide month or start_date+end_date': 'Informe o mês ou o período (data inicial e final)',
+  'Only SUPER_ADMIN can set user roles': 'Apenas superadministradores podem definir a função do usuário',
+  'Only SUPER_ADMIN can change user roles': 'Apenas superadministradores podem alterar a função do usuário',
+  'Forbidden: You do not have permission to perform this action.': 'Você não tem permissão para realizar esta ação',
+  'Token ausente ou inválido!': SESSION_EXPIRED_MESSAGE,
+  'Failed to integrate with Nuvemshop': 'Falha na comunicação com a Nuvemshop',
+  'Failed to integrate orders with Nuvemshop': 'Falha na comunicação com a Nuvemshop',
+  'Failed to create or update order.': 'Não foi possível salvar o pedido',
+  'Failed to create or update product.': 'Não foi possível salvar o produto',
   'A product with this slug already exists': 'Já existe um produto com este slug',
   'A product with this new slug already exists': 'Já existe um produto com este slug',
   'Failed to change password': 'Falha ao alterar a senha',
   'Unauthorized': 'Não autorizado',
-  'Session cookie not found. Use cookie-based auth.': 'Sessão expirada. Faça login novamente.',
+  'Session cookie not found. Use cookie-based auth.': SESSION_EXPIRED_MESSAGE,
   'Too Many Requests': 'Muitas tentativas. Tente novamente em instantes.',
   'Internal server error': INTERNAL_ERROR_MESSAGE,
-  'Missing CSRF token': 'Sessão expirada. Faça login novamente.',
-  'Invalid CSRF token': 'Sessão expirada. Faça login novamente.',
+  'Missing CSRF token': SESSION_EXPIRED_MESSAGE,
+  'Invalid CSRF token': SESSION_EXPIRED_MESSAGE,
   'Password must be at least 8 characters': 'A senha deve ter pelo menos 8 caracteres',
   'Current password is incorrect': 'Senha atual incorreta',
   'New password must be at least 8 characters': 'A nova senha deve ter pelo menos 8 caracteres',
-  'Forbidden: cannot modify a SUPER_ADMIN account': 'Não é permitido modificar uma conta SUPER_ADMIN',
-  'Forbidden: cannot delete a SUPER_ADMIN account': 'Não é permitido excluir uma conta SUPER_ADMIN',
+  'Forbidden: cannot modify a SUPER_ADMIN account': 'Não é permitido alterar uma conta de superadministrador',
+  'Forbidden: cannot delete a SUPER_ADMIN account': 'Não é permitido excluir uma conta de superadministrador',
 };
+
+// Messages that embed ids or quantities.
+const errorPatterns: Array<[RegExp, (m: RegExpMatchArray) => string]> = [
+  [/^Insufficient stock for variant .+\. Available: (-?\d+), requested: (\d+)$/, (m) => `Estoque insuficiente: disponível ${m[1]}, solicitado ${m[2]}`],
+  [/^Product variant .+ not found$/, () => 'Variação de produto não encontrada'],
+  [/^Product .+ not found$/, () => 'Produto não encontrado'],
+  [/^Subgroup .+ not found$/, () => 'Subgrupo não encontrado'],
+  [/^Cost component .+ not found$/, () => 'Componente de custo não encontrado'],
+];
+
+function translateError(raw: string): string | undefined {
+  const exact = errorTranslations[raw];
+  if (exact) return exact;
+  for (const [pattern, build] of errorPatterns) {
+    const match = raw.match(pattern);
+    if (match) return build(match);
+  }
+  return undefined;
+}
 
 interface ErrorShape {
   response?: { data?: { error?: unknown }; status?: number };
@@ -433,5 +480,5 @@ export function getFriendlyError(err: unknown): string {
   const status = (err as ErrorShape)?.response?.status;
   if (typeof status === 'number' && status >= 500) return INTERNAL_ERROR_MESSAGE;
   if (!raw) return 'Erro desconhecido';
-  return errorTranslations[raw] ?? GENERIC_ERROR_MESSAGE;
+  return translateError(raw) ?? GENERIC_ERROR_MESSAGE;
 }

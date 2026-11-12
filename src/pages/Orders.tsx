@@ -6,7 +6,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTableFilters } from '@/hooks/useTableFilters';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
-import { formatCurrency, formatDate, statusLabel, sourceLabel, storefrontLabel, paymentMethodLabel, effectiveOrderStatus, utmSourceLabel, utmMediumLabel, capitalizeWords } from '@/lib/formatters';
+import { formatCurrency, formatDate, statusLabel, sourceLabel, storefrontLabel, paymentMethodLabel, gatewayLabel, effectiveOrderStatus, utmSourceLabel, utmMediumLabel, capitalizeWords } from '@/lib/formatters';
 import { toast } from 'sonner';
 import type { Order, GetOrdersResponse } from '@/types';
 import type { UseMutationResult } from '@tanstack/react-query';
@@ -62,7 +62,7 @@ const fulfillmentFilterOptions: { value: string; label: string }[] = [
   { value: 'unpacked', label: 'Empacotando' },
   { value: 'dispatched', label: 'Despachado' },
   { value: 'delivered', label: 'Entregue' },
-  { value: 'marked_as_fulfilled', label: 'Marcado como Concluído' },
+  { value: 'marked_as_fulfilled', label: 'Marcado como concluído' },
   { value: 'cancelled', label: 'Cancelado' },
 ];
 
@@ -100,7 +100,7 @@ export default function Orders() {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       ordersApi.update(id, { status }),
     onSuccess: () => {
-      toast.success('Status atualizado');
+      toast.success('Situação atualizada');
       qc.invalidateQueries({ queryKey: ['orders'] });
     },
     onError: (err) => toast.error(
@@ -172,10 +172,10 @@ export default function Orders() {
           onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { fulfillment_status: value }); }}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtrar por Status" />
+            <SelectValue placeholder="Filtrar por situação" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os Status</SelectItem>
+            <SelectItem value="all">Todas as situações</SelectItem>
             {fulfillmentFilterOptions.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
@@ -183,7 +183,7 @@ export default function Orders() {
         </Select>
         <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="shrink-0">
           <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-          Sincronizar
+          Sincronizar com a Nuvemshop
         </Button>
       </div>
 
@@ -220,7 +220,7 @@ export default function Orders() {
                   <TableHead className="w-[10%]">ID</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead className="w-[16%]">Data</TableHead>
-                  <TableHead className="w-[18%]">Status</TableHead>
+                  <TableHead className="w-[18%]">Situação</TableHead>
                   <TableHead className="w-[18%] text-right">Total</TableHead>
                   <TableHead className="w-[9%] text-center">Ações</TableHead>
                 </TableRow>
@@ -274,13 +274,13 @@ export default function Orders() {
                                 disabled={effective.key === 'paid' || effective.key === 'delivered'}
                                 onClick={() => updateMutation.mutate({ id: order.id, status: 'PAID' })}
                               >
-                                Marcar como Pago
+                                Marcar como pago
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 disabled={effective.key === 'shipped' || effective.key === 'delivered'}
                                 onClick={() => updateMutation.mutate({ id: order.id, status: 'SHIPPED' })}
                               >
-                                Marcar como Enviado
+                                Marcar como enviado
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -288,7 +288,7 @@ export default function Orders() {
                                 disabled={effective.key === 'cancelled'}
                                 onClick={() => handleCancelClick(order.id)}
                               >
-                                Cancelar Pedido
+                                Cancelar pedido
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -352,9 +352,9 @@ export default function Orders() {
                 <section>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Origem</h3>
                   <div className="space-y-1 text-sm">
-                    <p><span className="text-muted-foreground">Fonte: </span>{sourceLabel(selectedOrder.source)}</p>
+                    <p><span className="text-muted-foreground">Plataforma: </span>{sourceLabel(selectedOrder.source)}</p>
                     {selectedOrder.storefront ? (
-                      <p><span className="text-muted-foreground">Storefront: </span>{storefrontLabel(selectedOrder.storefront)}</p>
+                      <p><span className="text-muted-foreground">Canal de venda: </span>{storefrontLabel(selectedOrder.storefront)}</p>
                     ) : null}
                   </div>
                 </section>
@@ -372,7 +372,7 @@ export default function Orders() {
                       {selectedOrder.payment_installments ? ` (${selectedOrder.payment_installments}x)` : ''}
                     </p>
                     {selectedOrder.gateway ? (
-                      <p className="text-muted-foreground">Gateway: {selectedOrder.gateway}</p>
+                      <p className="text-muted-foreground">Intermediador: {gatewayLabel(selectedOrder.gateway)}</p>
                     ) : null}
                   </div>
                 </section>
@@ -397,7 +397,7 @@ export default function Orders() {
                 </section>
 
                 <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">UTMs</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Rastreamento (UTM)</h3>
                   {selectedOrder.utm_source || selectedOrder.utm_medium || selectedOrder.utm_campaign || selectedOrder.utm_content || selectedOrder.utm_term ? (
                     <div className="space-y-1 text-sm">
                       {selectedOrder.utm_source ? <p><span className="text-muted-foreground">Fonte: </span>{utmSourceLabel(selectedOrder.utm_source)}</p> : null}
@@ -417,7 +417,7 @@ export default function Orders() {
                 </section>
 
                 <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Linha do Tempo</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Linha do tempo</h3>
                   <OrderTimeline
                     created_at={selectedOrder.created_at}
                     paid_at={selectedOrder.paid_at}
@@ -473,7 +473,7 @@ export default function Orders() {
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Cancelar Pedido
+              Cancelar pedido
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

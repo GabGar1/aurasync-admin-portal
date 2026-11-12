@@ -31,7 +31,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Storefronts */}
         <Card>
-          <CardHeader><CardTitle>Vendas por Loja</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Vendas por canal</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !storefrontData.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
               <ResponsiveContainer width="100%" height={Math.max(200, storefrontData.length * 40)}>
@@ -49,7 +49,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
 
         {/* Payment Methods */}
         <Card>
-          <CardHeader><CardTitle>Métodos de Pagamento</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Formas de pagamento</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[220px]" /> : !data?.by_payment_method?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
               (() => {
@@ -109,7 +109,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
                       <TableHead>Campanha</TableHead>
                       <TableHead className="text-right">Pedidos</TableHead>
                       <TableHead className="text-right">Receita</TableHead>
-                      <TableHead className="text-right">AOV</TableHead>
+                      <TableHead className="text-right">Ticket médio</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -130,7 +130,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
 
         {/* UTM Sources */}
         <Card>
-          <CardHeader><CardTitle>Origens (UTM)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Origem do tráfego (UTM)</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.by_source?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
               <div className="max-h-[300px] overflow-y-auto">
@@ -161,7 +161,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
 
         {/* Provinces */}
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Vendas por Estado</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Vendas por estado</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.by_province?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
               <div className="max-h-[300px] overflow-y-auto">
@@ -176,7 +176,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
                   <TableBody>
                     {[...data.by_province].sort((a, b) => b.orders - a.orders).map((prov, i) => (
                       <TableRow key={i}>
-                        <TableCell className="font-medium">{prov.province || 'N/A'}</TableCell>
+                        <TableCell className="font-medium">{prov.province || 'Não informado'}</TableCell>
                         <TableCell className="text-right">{prov.orders}</TableCell>
                         <TableCell className="text-right">{formatCurrency(prov.revenue)}</TableCell>
                       </TableRow>

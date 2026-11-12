@@ -91,7 +91,7 @@ export default function SubgroupProductsDialog({ open, onOpenChange, subgroup }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[720px]">
         <DialogHeader>
-          <DialogTitle>Produtos do Subgrupo</DialogTitle>
+          <DialogTitle>Produtos do subgrupo</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">

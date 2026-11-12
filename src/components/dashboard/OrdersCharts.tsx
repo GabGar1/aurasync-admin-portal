@@ -17,7 +17,7 @@ export default function OrdersCharts({ byHour, byStatus, isLoading }: OrdersChar
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Pedidos por Hora</CardTitle>
+          <CardTitle>Pedidos por hora</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -44,7 +44,7 @@ export default function OrdersCharts({ byHour, byStatus, isLoading }: OrdersChar
 
       <Card>
         <CardHeader>
-          <CardTitle>Pedidos por Status</CardTitle>
+          <CardTitle>Pedidos por situação de envio</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (

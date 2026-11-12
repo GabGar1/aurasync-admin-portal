@@ -94,7 +94,7 @@ export default function Products() {
 
   useWebSocket("products_updated", useCallback(() => {
     qc.invalidateQueries({ queryKey: ["products"] });
-    toast.success("Estoque atualizado em tempo real!");
+    toast.success("Produtos atualizados em tempo real!");
   }, [qc]));
 
   const syncMutation = useMutation({
@@ -140,15 +140,15 @@ export default function Products() {
   return (
     <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
       <div className="shrink-0">
-        <h1 className="text-2xl font-semibold">Produtos & Estoque</h1>
-        <p className="text-sm text-muted-foreground">Catálogo master de produtos e variações</p>
+        <h1 className="text-2xl font-semibold">Produtos</h1>
+        <p className="text-sm text-muted-foreground">Catálogo de produtos, variações e estoque</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 shrink-0">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Pesquisar por nome do produto, SKU interno ou IDs..."
+            placeholder="Pesquisar por nome, SKU ou código..."
             className="pl-9"
             value={search}
             onChange={(e) => { changeSearch(e.target.value); }}
@@ -159,10 +159,10 @@ export default function Products() {
           onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { category: value }); }}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtrar por Categoria" />
+            <SelectValue placeholder="Filtrar por categoria" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as Categorias</SelectItem>
+            <SelectItem value="all">Todas as categorias</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat} value={cat}>{cat}</SelectItem>
             ))}
@@ -170,7 +170,7 @@ export default function Products() {
         </Select>
         <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="shrink-0">
           <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
-          Sincronizar Nuvemshop
+          Sincronizar com a Nuvemshop
         </Button>
       </div>
 
@@ -207,19 +207,19 @@ export default function Products() {
               <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
                   <TableHead className="w-[3%] min-w-[2rem]" />
-                  <TableHead>Nome do Produto</TableHead>
+                  <TableHead>Produto</TableHead>
                   <TableHead className="w-[18%]">Categoria</TableHead>
-                  <TableHead className="w-[13%]">Status</TableHead>
+                  <TableHead className="w-[13%]">Situação</TableHead>
                   <TableHead className="w-[11%]">
                     <button
                       type="button"
                       className="flex items-center gap-1 hover:text-foreground"
                       onClick={toggleStockSort}
-                      aria-label="Ordenar por Estoque Local"
+                      aria-label="Ordenar por estoque"
                       aria-pressed={stockSort !== null}
                       title={stockSort ? "Clique para limpar a ordenação" : "Clique para ordenar por estoque"}
                     >
-                      Estoque Local
+                      Estoque
                       {stockSort ? (
                         stockSort === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
                       ) : (
@@ -287,7 +287,7 @@ export default function Products() {
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nome</th>
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[100px]">SKU</th>
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[110px]">Preço</th>
-                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[130px]">Estoque Local</th>
+                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[130px]">Estoque</th>
                                     <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-[140px]">Dimensões</th>
                                   </tr>
                                 </thead>

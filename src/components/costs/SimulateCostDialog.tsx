@@ -70,11 +70,11 @@ export default function SimulateCostDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle>Simular Custo</DialogTitle>
+          <DialogTitle>Simular custo</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Produto / Variante</Label>
+            <Label>Produto / variação</Label>
             <VariantPicker value={variant} onSelect={handleVariantSelect} />
           </div>
           <div className="grid grid-cols-2 gap-4">

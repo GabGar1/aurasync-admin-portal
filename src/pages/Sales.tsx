@@ -129,8 +129,8 @@ export default function Sales() {
   return (
     <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
       <div className="shrink-0">
-        <h1 className="text-2xl font-semibold">Realizar Venda</h1>
-        <p className="text-sm text-muted-foreground">Registrar venda externa fora da loja online</p>
+        <h1 className="text-2xl font-semibold">Venda externa</h1>
+        <p className="text-sm text-muted-foreground">Registre vendas feitas fora da loja online</p>
       </div>
 
       <form onSubmit={form.handleSubmit((values) => createMutation.mutate(values))} className="w-full max-w-6xl space-y-6">
@@ -161,7 +161,7 @@ export default function Sales() {
               ) : null}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sale-customer-email">Email</Label>
+              <Label htmlFor="sale-customer-email">E-mail</Label>
               <Input
                 id="sale-customer-email"
                 type="email"
@@ -185,7 +185,7 @@ export default function Sales() {
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Itens</h3>
             <Button type="button" variant="outline" size="sm" onClick={addItem}>
               <Plus className="h-3 w-3 mr-1" />
-              Adicionar Item
+              Adicionar item
             </Button>
           </div>
           {fields.map((field, index) => (
@@ -258,7 +258,7 @@ export default function Sales() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sale-gateway">Gateway</Label>
+              <Label htmlFor="sale-gateway">Intermediador de pagamento</Label>
               <Input id="sale-gateway" placeholder="Ex: Mercado Pago" {...form.register('gateway')} />
             </div>
           </div>
@@ -272,7 +272,7 @@ export default function Sales() {
               <Input id="sale-installments" type="number" min="1" placeholder="1" {...form.register('payment_installments')} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sale-status">Status</Label>
+              <Label htmlFor="sale-status">Situação do pedido</Label>
               <Select value={form.watch('status')} onValueChange={(value) => form.setValue('status', value as ExternalSaleFormValues['status'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -299,13 +299,13 @@ export default function Sales() {
               checked={form.watch('is_fair') ?? false}
               onCheckedChange={(checked) => form.setValue('is_fair', checked)}
             />
-            <Label htmlFor="sale-is-fair" className="cursor-pointer">Venda de Feira</Label>
+            <Label htmlFor="sale-is-fair" className="cursor-pointer">Venda em feira</Label>
           </div>
         </div>
 
         <Button type="submit" disabled={createMutation.isPending} className="w-full sm:w-auto">
           {createMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wallet className="h-4 w-4 mr-2" />}
-          Registrar Venda
+          Registrar venda
         </Button>
       </form>
 

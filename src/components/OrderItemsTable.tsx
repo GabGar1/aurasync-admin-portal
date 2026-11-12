@@ -13,7 +13,7 @@ interface Props {
 async function copyVariantId(id: string) {
   try {
     await navigator.clipboard.writeText(id);
-    toast.success('ID da variante copiado');
+    toast.success('ID da variação copiado');
   } catch {
     toast.error('Falha ao copiar');
   }
@@ -34,9 +34,9 @@ export default function OrderItemsTable({ items }: Props) {
             <TableHead className="w-[10px]" />
             <TableHead>Produto</TableHead>
             <TableHead className="text-right">Qtd</TableHead>
-            <TableHead className="text-right">Preço Unit.</TableHead>
-            <TableHead className="text-right">Custo Unit.</TableHead>
-            <TableHead className="text-right">Lucro Unit.</TableHead>
+            <TableHead className="text-right">Preço unit.</TableHead>
+            <TableHead className="text-right">Custo unit.</TableHead>
+            <TableHead className="text-right">Lucro unit.</TableHead>
             <TableHead className="text-right">Margem</TableHead>
           </TableRow>
         </TableHeader>
@@ -66,7 +66,7 @@ export default function OrderItemsTable({ items }: Props) {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
-                    title="Copiar ID da variante"
+                    title="Copiar ID da variação"
                     onClick={() => copyVariantId(item.variant_id)}
                   >
                     <Copy className="h-3 w-3" />

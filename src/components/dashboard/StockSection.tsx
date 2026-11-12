@@ -13,11 +13,11 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Estoque</h2>
-      <p className="text-xs text-muted-foreground">Estoque: últimos 30 dias (período fixo)</p>
+      <p className="text-xs text-muted-foreground">Os indicadores de estoque consideram sempre os últimos 30 dias, independentemente do período selecionado.</p>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Low Stock */}
         <Card>
-          <CardHeader><CardTitle>Estoque Baixo</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Estoque baixo</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.low_stock?.length ? (
               <div className="flex items-center justify-center py-8">
@@ -59,9 +59,9 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
 
         {/* No Sales 30d */}
         <Card>
-          <CardHeader><CardTitle>Sem Vendas (30 dias)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Sem vendas (30 dias)</CardTitle></CardHeader>
           <CardContent>
-            {isLoading ? <Skeleton className="h-[200px]" /> : !data?.no_sales_30d?.length ? <p className="text-muted-foreground text-center py-8">Nenhum</p> : (
+            {isLoading ? <Skeleton className="h-[200px]" /> : !data?.no_sales_30d?.length ? <p className="text-muted-foreground text-center py-8">Nenhum produto</p> : (
               <div className="max-h-[300px] overflow-y-auto">
                 <Table>
                   <TableHeader>
@@ -86,7 +86,7 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
 
         {/* Turnover Rates */}
         <Card>
-          <CardHeader><CardTitle>Taxa de Giro</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Taxa de giro</CardTitle></CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.turnover_rate?.length ? <p className="text-muted-foreground text-center py-8">Sem dados</p> : (
               <div className="max-h-[300px] overflow-y-auto">
@@ -94,9 +94,9 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Produto</TableHead>
-                      <TableHead>Variante</TableHead>
-                      <TableHead className="text-right">Vendas (30d)</TableHead>
-                      <TableHead className="text-right">Estoque Médio</TableHead>
+                      <TableHead>Variação</TableHead>
+                      <TableHead className="text-right">Vendas (30 dias)</TableHead>
+                      <TableHead className="text-right">Estoque médio</TableHead>
                       <TableHead className="text-right">Giro</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -123,9 +123,9 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
 
         {/* Dead Stock */}
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Estoque Parado (90+ dias sem venda)</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Estoque parado (90+ dias sem venda)</CardTitle></CardHeader>
           <CardContent>
-            {isLoading ? <Skeleton className="h-[200px]" /> : !data?.dead_stock?.length ? <p className="text-muted-foreground text-center py-8">Nenhum</p> : (
+            {isLoading ? <Skeleton className="h-[200px]" /> : !data?.dead_stock?.length ? <p className="text-muted-foreground text-center py-8">Nenhum produto</p> : (
               <div className="max-h-[300px] overflow-y-auto">
                 <Table>
                   <TableHeader>

@@ -22,14 +22,14 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
       <div className="flex flex-wrap items-center justify-between gap-4 shrink-0">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <h1 className="text-2xl font-semibold">Painel</h1>
         <DateRangePicker range={range} onRangeChange={setRange} />
       </div>
 
       {hasError ? (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erro ao carregar o dashboard</AlertTitle>
+          <AlertTitle>Erro ao carregar o painel</AlertTitle>
           <AlertDescription>
             Alguns dados não puderam ser carregados.
             <Button

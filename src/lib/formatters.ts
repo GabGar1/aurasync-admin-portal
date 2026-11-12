@@ -35,13 +35,17 @@ export function formatTime(value: string | null | undefined): string {
 }
 
 const paymentMethodLabels: Record<string, string> = {
-  credit_card: 'Cartão de Crédito',
-  debit_card: 'Cartão de Débito',
+  credit_card: 'Cartão de crédito',
+  debit_card: 'Cartão de débito',
   pix: 'Pix',
   boleto: 'Boleto',
+  ticket: 'Boleto',
   bank_transfer: 'Transferência bancária',
+  wire_transfer: 'Transferência bancária',
   cash: 'Dinheiro',
+  wallet: 'Carteira digital',
   nuvem_pago: 'Nuvem Pago',
+  other: 'Outros',
 };
 
 export function paymentMethodLabel(method: string | null | undefined): string {
@@ -49,11 +53,26 @@ export function paymentMethodLabel(method: string | null | undefined): string {
   return paymentMethodLabels[method] ?? method;
 }
 
+const gatewayLabels: Record<string, string> = {
+  'nuvem-pago': 'Nuvem Pago',
+  nuvem_pago: 'Nuvem Pago',
+  'mercado-pago': 'Mercado Pago',
+  mercadopago: 'Mercado Pago',
+  pagseguro: 'PagSeguro',
+  paypal: 'PayPal',
+  pagarme: 'Pagar.me',
+};
+
+export function gatewayLabel(gateway: string | null | undefined): string {
+  if (!gateway) return '-';
+  return gatewayLabels[gateway.toLowerCase()] ?? capitalizeWords(gateway);
+}
+
 export const statusLabels: Record<string, string> = {
-  open: 'Ativo',
+  open: 'Em aberto',
   paid: 'Pago',
   shipped: 'Enviado',
-  closed: 'Arquivado',
+  closed: 'Concluído',
   cancelled: 'Cancelado',
   PENDING: 'Pendente',
   PAID: 'Pago',
@@ -66,7 +85,7 @@ export const statusLabels: Record<string, string> = {
   packed: 'Empacotado',
   DISPATCHED: 'Despachado',
   UNPACKED: 'Empacotando',
-  MARKED_AS_FULFILLED: 'Marcado como Concluído',
+  MARKED_AS_FULFILLED: 'Marcado como concluído',
 };
 
 export function statusLabel(status: string): string {
@@ -154,9 +173,9 @@ export function marginPercent(value: number | null | undefined): string {
 }
 
 const roleLabels: Record<string, string> = {
-  ADMIN: 'Admin',
+  ADMIN: 'Administrador',
   EMPLOYEE: 'Funcionário',
-  SUPER_ADMIN: 'Super Admin',
+  SUPER_ADMIN: 'Superadministrador',
 };
 
 export function roleLabel(role: string): string {
@@ -186,7 +205,7 @@ const utmSourceLabels: Record<string, string> = {
   fb: 'Facebook',
   IGShopping: 'Instagram Shopping',
   'nuvem-app': 'Nuvemshop App',
-  'chatgpt.com': 'Chat GPT',
+  'chatgpt.com': 'ChatGPT',
 };
 
 export function utmSourceLabel(value: string | null | undefined): string {

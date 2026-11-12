@@ -41,7 +41,7 @@ export default function CustomerPicker({ onSelect }: Props) {
           <div className="flex items-center border-b px-3">
             <Search className="h-4 w-4 text-muted-foreground" />
             <CommandInput
-              placeholder="Buscar por nome ou email..."
+              placeholder="Buscar por nome ou e-mail..."
               value={search}
               onValueChange={setSearch}
               className="h-9 border-0 focus:ring-0"

@@ -104,7 +104,7 @@ export default function SubgroupComponentsDialog({ open, onOpenChange, subgroup 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[720px]">
         <DialogHeader>
-          <DialogTitle>Componentes do Subgrupo</DialogTitle>
+          <DialogTitle>Componentes do subgrupo</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">

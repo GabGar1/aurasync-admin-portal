@@ -102,7 +102,7 @@ export default function SubgroupsTab() {
         </div>
         <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'true' | 'false')}>
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder="Situação" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
@@ -113,7 +113,7 @@ export default function SubgroupsTab() {
         {admin ? (
           <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
             <Plus className="h-4 w-4 mr-1" />
-            Novo Subgrupo
+            Novo subgrupo
           </Button>
         ) : null}
       </div>
@@ -146,7 +146,7 @@ export default function SubgroupsTab() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[55%]">Nome</TableHead>
-                <TableHead className="w-[20%]">Status</TableHead>
+                <TableHead className="w-[20%]">Situação</TableHead>
                 <TableHead className="w-[25%] text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>

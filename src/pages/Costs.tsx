@@ -15,8 +15,8 @@ export default function Costs() {
         <TabsList>
           <TabsTrigger value="components">Componentes</TabsTrigger>
           <TabsTrigger value="subgroups">Subgrupos</TabsTrigger>
-          <TabsTrigger value="credit-fee">Taxa de Crédito</TabsTrigger>
-          <TabsTrigger value="closing">Fechamento Mensal</TabsTrigger>
+          <TabsTrigger value="credit-fee">Taxa de crédito</TabsTrigger>
+          <TabsTrigger value="closing">Fechamento mensal</TabsTrigger>
         </TabsList>
         <TabsContent value="components"><ComponentsTab /></TabsContent>
         <TabsContent value="subgroups"><SubgroupsTab /></TabsContent>

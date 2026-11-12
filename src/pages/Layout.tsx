@@ -64,7 +64,7 @@ export default function Layout() {
               <button className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md hover:bg-sidebar-accent transition-colors text-sm">
                 <User className="h-4 w-4 text-sidebar-foreground" />
                 <span className="flex-1 text-left truncate">
-                  {user ? `${user.first_name} ${user.last_name}` : "Admin"}
+                  {user ? `${user.first_name} ${user.last_name}` : "Usuário"}
                 </span>
                 <ChevronDown className="h-3 w-3 text-sidebar-foreground" />
               </button>

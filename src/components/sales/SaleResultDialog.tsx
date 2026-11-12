@@ -27,7 +27,7 @@ export default function SaleResultDialog({ open, onOpenChange, sale }: Props) {
               <span className="font-mono text-xs pt-0.5">#{sale.id.slice(0, 8)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Status</span>
+              <span className="text-muted-foreground">Situação</span>
               <Badge variant={sale.status === 'CANCELED' ? 'destructive' : 'default'}>
                 {statusLabel(sale.status)}
               </Badge>

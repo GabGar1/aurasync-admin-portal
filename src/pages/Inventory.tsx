@@ -61,12 +61,12 @@ export default function Inventory() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Inventário</h1>
-            <p className="text-sm text-muted-foreground">Histórico de transações de inventário</p>
+            <p className="text-sm text-muted-foreground">Histórico de movimentações de estoque</p>
           </div>
           {admin && (
             <Button onClick={() => setDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
-              Ajuste Manual
+              Ajustar estoque
             </Button>
           )}
         </div>
@@ -76,7 +76,7 @@ export default function Inventory() {
         <div className="flex items-center justify-center py-16">
           <Alert variant="destructive" className="w-full max-w-lg">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Erro ao carregar transações</AlertTitle>
+            <AlertTitle>Erro ao carregar movimentações</AlertTitle>
             <AlertDescription>
               <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
                 Tentar novamente
@@ -87,8 +87,8 @@ export default function Inventory() {
       ) : transactions.length === 0 && !isLoading ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Database className="h-12 w-12 mb-4" />
-          <p className="text-lg font-medium">Nenhuma transação encontrada</p>
-          <p className="text-sm">Nenhum movimento de inventário registrado até o momento.</p>
+          <p className="text-lg font-medium">Nenhuma movimentação encontrada</p>
+          <p className="text-sm">Nenhuma movimentação de estoque registrada até o momento.</p>
         </div>
       ) : (
         <>
@@ -96,10 +96,10 @@ export default function Inventory() {
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead>Data</TableHead>
-                <TableHead>ID da Variação</TableHead>
+                <TableHead>ID da variação</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead className="text-right">Quantidade</TableHead>
-                <TableHead>ID do Pedido</TableHead>
+                <TableHead>ID do pedido</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -160,8 +160,8 @@ export default function Inventory() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajuste Manual de Estoque</DialogTitle>
-            <DialogDescription>Registre uma movimentação manual de inventário</DialogDescription>
+            <DialogTitle>Ajuste manual de estoque</DialogTitle>
+            <DialogDescription>Registre uma entrada, saída ou correção de estoque</DialogDescription>
           </DialogHeader>
           <CreateInventoryForm
             onSubmit={(payload) => createMutation.mutate(payload)}
@@ -204,7 +204,7 @@ function CreateInventoryForm({ onSubmit, isPending }: { onSubmit: (payload: Crea
   return (
     <form onSubmit={handleSubmit} className="space-y-4 py-4">
       <div className="space-y-2">
-        <Label htmlFor="variant_id">ID da Variação</Label>
+        <Label htmlFor="variant_id">ID da variação</Label>
         <Input
           id="variant_id"
           placeholder="ID da variação"
@@ -243,7 +243,7 @@ function CreateInventoryForm({ onSubmit, isPending }: { onSubmit: (payload: Crea
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="order_id">ID do Pedido (opcional)</Label>
+        <Label htmlFor="order_id">ID do pedido (opcional)</Label>
         <Input
           id="order_id"
           placeholder="ID do pedido relacionado"

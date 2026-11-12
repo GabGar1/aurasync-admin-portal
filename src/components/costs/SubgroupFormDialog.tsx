@@ -53,7 +53,7 @@ export default function SubgroupFormDialog({ open, onOpenChange, subgroup, isPen
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{subgroup ? 'Editar Subgrupo' : 'Novo Subgrupo'}</DialogTitle>
+          <DialogTitle>{subgroup ? 'Editar subgrupo' : 'Novo subgrupo'}</DialogTitle>
           <DialogDescription>
             {subgroup ? 'Atualize os dados do subgrupo de produtos.' : 'Cadastre um novo subgrupo de produtos.'}
           </DialogDescription>

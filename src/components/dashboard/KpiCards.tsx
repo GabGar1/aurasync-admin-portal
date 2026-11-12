@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency, roleLabel } from '@/lib/formatters';
+import { formatCurrency, marginPercent, roleLabel } from '@/lib/formatters';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import type { OrdersResponse, UserStats } from '@/types';
 
@@ -18,21 +18,21 @@ export default function KpiCards({ orders, userStats, isLoading }: KpiCardsProps
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      <StatCard label="Ticket Médio" isLoading={isLoading}>
+      <StatCard label="Ticket médio" isLoading={isLoading}>
         {formatCurrency(orders?.average_order_value ?? 0)}
       </StatCard>
 
-      <StatCard label="Receita Total (Período)" isLoading={isLoading}>
+      <StatCard label="Receita no período" isLoading={isLoading}>
         {formatCurrency(totalRevenue)}
       </StatCard>
 
-      <StatCard label="Total de Pedidos" isLoading={isLoading}>
+      <StatCard label="Pedidos no período" isLoading={isLoading}>
         {totalOrders}
       </StatCard>
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Tendência de Receita</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">Tendência de receita</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -57,7 +57,7 @@ export default function KpiCards({ orders, userStats, isLoading }: KpiCardsProps
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Clientes Recorrentes</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">Clientes recorrentes</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -67,8 +67,9 @@ export default function KpiCards({ orders, userStats, isLoading }: KpiCardsProps
               <div className="text-2xl font-bold">{orders.repeat_customers.repeat_customers}</div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{orders.repeat_customers.unique_customers} únicos</span>
-                <Badge variant={orders.repeat_customers.repeat_rate > 30 ? 'default' : 'secondary'}>
-                  {orders.repeat_customers.repeat_rate.toFixed(1)}%
+                {/* repeat_rate comes from the API as a fraction (0–1) */}
+                <Badge variant={orders.repeat_customers.repeat_rate > 0.3 ? 'default' : 'secondary'}>
+                  {marginPercent(orders.repeat_customers.repeat_rate * 100)}
                 </Badge>
               </div>
             </div>

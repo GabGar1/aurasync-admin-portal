@@ -158,7 +158,7 @@ export default function Users() {
           {admin && (
             <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
-              Novo Usuário
+              Novo usuário
             </Button>
           )}
         </div>
@@ -168,7 +168,7 @@ export default function Users() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Pesquisar por nome ou email..."
+            placeholder="Pesquisar por nome ou e-mail..."
             className="pl-9"
             value={search}
             onChange={(e) => { changeSearch(e.target.value); }}
@@ -179,13 +179,13 @@ export default function Users() {
           onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { role: value }); }}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtrar por Função" />
+            <SelectValue placeholder="Filtrar por função" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as Funções</SelectItem>
-            <SelectItem value="ADMIN">Admin</SelectItem>
+            <SelectItem value="all">Todas as funções</SelectItem>
+            <SelectItem value="ADMIN">Administrador</SelectItem>
             <SelectItem value="EMPLOYEE">Funcionário</SelectItem>
-            <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+            <SelectItem value="SUPER_ADMIN">Superadministrador</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -210,7 +210,7 @@ export default function Users() {
           {admin ? (
             <Button onClick={() => setCreateDialogOpen(true)} className="mt-4">
               <Plus className="h-4 w-4 mr-1" />
-              Novo Usuário
+              Novo usuário
             </Button>
           ) : null}
         </div>
@@ -221,7 +221,7 @@ export default function Users() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Função</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Situação</TableHead>
                 <TableHead>Criado em</TableHead>
                 {admin && <TableHead className="w-[80px] text-center">Ações</TableHead>}
               </TableRow>
@@ -300,7 +300,7 @@ export default function Users() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Novo Usuário</DialogTitle>
+            <DialogTitle>Novo usuário</DialogTitle>
             <DialogDescription>Preencha os dados para criar um novo usuário</DialogDescription>
           </DialogHeader>
           <CreateUserForm
@@ -314,7 +314,7 @@ export default function Users() {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
+            <DialogTitle>Editar usuário</DialogTitle>
             <DialogDescription>Atualize os dados do usuário</DialogDescription>
           </DialogHeader>
           {editingUser && (
@@ -331,7 +331,7 @@ export default function Users() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja remover {deletingUser?.first_name} {deletingUser?.last_name}? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
@@ -385,7 +385,7 @@ function CreateUserForm({ onSubmit, isPending, isSuperAdmin }: { onSubmit: (payl
   return (
     <form onSubmit={handleSubmit} className="space-y-4 py-4">
       <div className="space-y-2">
-        <Label htmlFor="create-email">Email</Label>
+        <Label htmlFor="create-email">E-mail</Label>
         <Input
           id="create-email"
           type="email"
@@ -436,8 +436,8 @@ function CreateUserForm({ onSubmit, isPending, isSuperAdmin }: { onSubmit: (payl
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="EMPLOYEE">Funcionário</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
-              <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+              <SelectItem value="ADMIN">Administrador</SelectItem>
+              <SelectItem value="SUPER_ADMIN">Superadministrador</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -491,7 +491,7 @@ function EditUserForm({ user, onSubmit, isPending, isSuperAdmin }: { user: User;
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="edit-status">Status</Label>
+        <Label htmlFor="edit-status">Situação</Label>
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger id="edit-status">
             <SelectValue />
@@ -511,8 +511,8 @@ function EditUserForm({ user, onSubmit, isPending, isSuperAdmin }: { user: User;
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="EMPLOYEE">Funcionário</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
-              <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+              <SelectItem value="ADMIN">Administrador</SelectItem>
+              <SelectItem value="SUPER_ADMIN">Superadministrador</SelectItem>
             </SelectContent>
           </Select>
         </div>

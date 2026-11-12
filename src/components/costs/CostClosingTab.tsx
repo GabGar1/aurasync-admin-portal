@@ -39,7 +39,7 @@ export default function CostClosingTab() {
         <CardHeader>
           <CardTitle>Fechar mês</CardTitle>
           <CardDescription>
-            Gera as alocações das camadas mensais para o período selecionado.
+            Distribui os custos mensais (contador, aluguel, assinaturas…) entre os pedidos do mês selecionado.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -66,7 +66,7 @@ export default function CostClosingTab() {
             </div>
           )}
           <p className="text-sm text-muted-foreground">
-            O fechamento é idempotente — rodar novamente recalcula e sobrescreve o mesmo mês.
+            Você pode fechar o mesmo mês mais de uma vez: os valores são recalculados e substituem o fechamento anterior.
           </p>
         </CardContent>
       </Card>
@@ -90,7 +90,7 @@ export default function CostClosingTab() {
                 <p className="text-2xl font-semibold">{lastResult.products}</p>
               </div>
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Alocações</p>
+                <p className="text-sm text-muted-foreground">Rateios</p>
                 <p className="text-2xl font-semibold">{lastResult.allocations}</p>
               </div>
             </div>

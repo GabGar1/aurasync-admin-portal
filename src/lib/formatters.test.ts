@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   typeLabel, categoryLabel, calculationBaseLabel, storefrontLabel,
   sourceLabel, paymentMethodLabel, statusLabel, preferLabel, marginPercent,
-  roleLabel, utmSourceLabel, utmMediumLabel, capitalizeWords, effectiveOrderStatus,
+  roleLabel, utmSourceLabel, utmMediumLabel, capitalizeWords, effectiveOrderStatus, gatewayLabel,
   allocationBasisLabel, formatDateOnly, inventoryTypeLabel,
 } from './formatters';
 
@@ -46,8 +46,25 @@ describe('glossário PT-BR', () => {
   it('traduz formas de pagamento estendidas', () => {
     expect(paymentMethodLabel('cash')).toBe('Dinheiro');
     expect(paymentMethodLabel('bank_transfer')).toBe('Transferência bancária');
-    expect(paymentMethodLabel('credit_card')).toBe('Cartão de Crédito');
+    expect(paymentMethodLabel('credit_card')).toBe('Cartão de crédito');
+    expect(paymentMethodLabel('debit_card')).toBe('Cartão de débito');
     expect(paymentMethodLabel('pix')).toBe('Pix');
+    expect(paymentMethodLabel('other')).toBe('Outros');
+    expect(paymentMethodLabel('wire_transfer')).toBe('Transferência bancária');
+  });
+
+  it('traduz intermediadores de pagamento', () => {
+    expect(gatewayLabel('nuvem-pago')).toBe('Nuvem Pago');
+    expect(gatewayLabel('mercado-pago')).toBe('Mercado Pago');
+    expect(gatewayLabel('pagseguro')).toBe('PagSeguro');
+    expect(gatewayLabel('outro-gateway')).toBe('Outro Gateway');
+    expect(gatewayLabel(null)).toBe('-');
+  });
+
+  it('usa os mesmos rótulos de situação da API', () => {
+    expect(statusLabel('open')).toBe('Em aberto');
+    expect(statusLabel('closed')).toBe('Concluído');
+    expect(statusLabel('MARKED_AS_FULFILLED')).toBe('Marcado como concluído');
   });
 
   it('traduz status estendidos', () => {
@@ -78,9 +95,9 @@ describe('glossário PT-BR', () => {
 
 describe('rótulos novos', () => {
   it('traduz papéis de usuário', () => {
-    expect(roleLabel('ADMIN')).toBe('Admin');
+    expect(roleLabel('ADMIN')).toBe('Administrador');
     expect(roleLabel('EMPLOYEE')).toBe('Funcionário');
-    expect(roleLabel('SUPER_ADMIN')).toBe('Super Admin');
+    expect(roleLabel('SUPER_ADMIN')).toBe('Superadministrador');
     expect(roleLabel('DESCONHECIDO')).toBe('DESCONHECIDO');
   });
 
@@ -89,7 +106,7 @@ describe('rótulos novos', () => {
     expect(utmSourceLabel('fb')).toBe('Facebook');
     expect(utmSourceLabel('IGShopping')).toBe('Instagram Shopping');
     expect(utmSourceLabel('nuvem-app')).toBe('Nuvemshop App');
-    expect(utmSourceLabel('chatgpt.com')).toBe('Chat GPT');
+    expect(utmSourceLabel('chatgpt.com')).toBe('ChatGPT');
     expect(utmSourceLabel(null)).toBe('Orgânico');
     expect(utmSourceLabel('N/A')).toBe('Orgânico');
     expect(utmSourceLabel('google ads')).toBe('Google Ads');
@@ -115,7 +132,7 @@ describe('rótulos novos', () => {
     expect(effectiveOrderStatus({ status: 'PENDING', cancelled_at: 'x', completed_at: 'x' }).label).toBe('Cancelado');
     expect(effectiveOrderStatus({ status: 'DISPATCHED' }).label).toBe('Despachado');
     expect(effectiveOrderStatus({ status: 'UNPACKED' }).label).toBe('Empacotando');
-    expect(effectiveOrderStatus({ status: 'MARKED_AS_FULFILLED' }).label).toBe('Marcado como Concluído');
+    expect(effectiveOrderStatus({ status: 'MARKED_AS_FULFILLED' }).label).toBe('Marcado como concluído');
   });
 
   it('prioriza estornado/reembolsado sobre completed_at', () => {

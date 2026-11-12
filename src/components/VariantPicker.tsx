@@ -29,7 +29,7 @@ interface Props {
   placeholder?: string;
 }
 
-export default function VariantPicker({ value, onSelect, placeholder = 'Buscar produto ou variante...' }: Props) {
+export default function VariantPicker({ value, onSelect, placeholder = 'Buscar produto ou variação...' }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 400);
@@ -70,7 +70,7 @@ export default function VariantPicker({ value, onSelect, placeholder = 'Buscar p
           <div className="flex items-center border-b px-3">
             <Search className="h-4 w-4 text-muted-foreground" />
             <CommandInput
-              placeholder="Pesquisar produto ou variante..."
+              placeholder="Pesquisar produto ou variação..."
               value={search}
               onValueChange={setSearch}
               className="h-9 border-0 focus:ring-0"

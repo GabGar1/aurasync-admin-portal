@@ -17,7 +17,7 @@ export default function RevenueChart({ data, isLoading }: RevenueChartProps) {
   return (
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
-        <CardTitle>Receita ao Longo do Tempo</CardTitle>
+        <CardTitle>Receita ao longo do tempo</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (

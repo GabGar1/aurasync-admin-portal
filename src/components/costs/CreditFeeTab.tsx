@@ -100,7 +100,7 @@ export default function CreditFeeTab() {
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <CreditCard className="h-12 w-12 mb-4" />
             <p className="text-lg font-medium">Nenhuma faixa de crédito encontrada</p>
-            <p className="text-sm">As faixas de parcelamento são configuradas no backend.</p>
+            <p className="text-sm">Nenhuma taxa de parcelamento foi cadastrada ainda.</p>
           </div>
         ) : (
           <Table className="table-fixed">
@@ -109,7 +109,7 @@ export default function CreditFeeTab() {
                 <TableHead className="w-[25%]">Parcelas</TableHead>
                 <TableHead className="w-[25%]">Percentual</TableHead>
                 <TableHead className="w-[25%]">Taxa fixa</TableHead>
-                <TableHead className="w-[15%]">Status</TableHead>
+                <TableHead className="w-[15%]">Situação</TableHead>
                 <TableHead className="w-[10%] text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>

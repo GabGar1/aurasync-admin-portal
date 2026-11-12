@@ -70,7 +70,7 @@ export default function CreateCustomerDialog({ open, onOpenChange, onCreated }: 
             ) : null}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-customer-email">Email</Label>
+            <Label htmlFor="new-customer-email">E-mail</Label>
             <Input id="new-customer-email" type="email" placeholder="email@exemplo.com" {...form.register('email')} />
             {form.formState.errors.email ? (
               <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>

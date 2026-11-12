@@ -573,6 +573,10 @@ export interface CustomerOrder {
   status: string;
   total_amount: number;
   created_at: string;
+  paid_at?: string | null;
+  shipped_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
 }
 
 export interface GetCustomersResponse {

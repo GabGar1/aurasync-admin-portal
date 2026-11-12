@@ -117,7 +117,7 @@ export default function ProductAssociationsDialog({ open, onOpenChange }: Props)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
-          <DialogTitle>Associações de Componentes</DialogTitle>
+          <DialogTitle>Associações de componentes</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">

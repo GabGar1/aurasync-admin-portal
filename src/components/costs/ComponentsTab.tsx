@@ -104,7 +104,7 @@ export default function ComponentsTab() {
           onValueChange={(value) => changeFilter(value === 'all' ? undefined : { is_active: value === 'true' })}
         >
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder="Situação" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
@@ -115,7 +115,7 @@ export default function ComponentsTab() {
         {admin ? (
           <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
             <Plus className="h-4 w-4 mr-1" />
-            Novo Componente
+            Novo componente
           </Button>
         ) : null}
       </div>
@@ -152,7 +152,7 @@ export default function ComponentsTab() {
                 <TableHead className="w-[14%]">Categoria</TableHead>
                 <TableHead className="w-[14%] text-right">Valor</TableHead>
                 <TableHead className="w-[14%]">Base de cálculo</TableHead>
-                <TableHead className="w-[10%]">Status</TableHead>
+                <TableHead className="w-[10%]">Situação</TableHead>
                 <TableHead className="w-[12%] text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>

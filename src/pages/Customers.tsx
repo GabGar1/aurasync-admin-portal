@@ -50,7 +50,7 @@ export default function Customers() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Pesquisar por nome ou email..."
+            placeholder="Pesquisar por nome ou e-mail..."
             className="pl-9"
             value={search}
             onChange={(e) => changeSearch(e.target.value)}
@@ -88,9 +88,9 @@ export default function Customers() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[22%]">Nome</TableHead>
-                <TableHead className="w-[22%]">Email</TableHead>
+                <TableHead className="w-[22%]">E-mail</TableHead>
                 <TableHead className="w-[10%]">Cidade</TableHead>
-                <TableHead className="w-[8%]">UF</TableHead>
+                <TableHead className="w-[8%]">Estado</TableHead>
                 <TableHead className="w-[8%] text-right">Pedidos</TableHead>
                 <TableHead className="w-[14%] text-right">Total gasto</TableHead>
                 <TableHead className="w-[12%] text-right">Ticket médio</TableHead>

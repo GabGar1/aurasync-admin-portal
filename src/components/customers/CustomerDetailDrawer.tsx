@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { CreditCard, Globe, Repeat, AlertTriangle } from 'lucide-react';
 import { customersApi } from '@/services/api';
-import { formatCurrency, formatDate, paymentMethodLabel, statusLabel } from '@/lib/formatters';
+import { formatCurrency, formatDate, paymentMethodLabel, gatewayLabel, effectiveOrderStatus } from '@/lib/formatters';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,7 +43,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
               <SheetDescription>
                 {customer.email ? (
                   <a href={`mailto:${customer.email}`} className="hover:underline">{customer.email}</a>
-                ) : 'Sem email cadastrado'}
+                ) : 'Sem e-mail cadastrado'}
               </SheetDescription>
             </SheetHeader>
 
@@ -70,7 +70,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
                     <SummaryRow label="Primeira compra" value={formatDate(indicators.first_purchase_at)} />
                     <SummaryRow label="Última compra" value={formatDate(indicators.last_purchase_at ?? indicators.first_purchase_at)} />
                     {customer.city || customer.province ? (
-                      <SummaryRow label="Cidade / UF" value={[customer.city, customer.province].filter(Boolean).join(' - ')} />
+                      <SummaryRow label="Cidade / estado" value={[customer.city, customer.province].filter(Boolean).join(' - ')} />
                     ) : null}
                   </div>
                 ) : null}
@@ -87,8 +87,8 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Globe className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Gateway preferido:</span>
-                      <span className="font-medium">{indicators.favorite_gateway ?? '-'}</span>
+                      <span className="text-muted-foreground">Intermediador preferido:</span>
+                      <span className="font-medium">{gatewayLabel(indicators.favorite_gateway)}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Repeat className="h-4 w-4 text-muted-foreground" />
@@ -100,7 +100,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
               </section>
 
               <section>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Histórico de Pedidos</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Histórico de pedidos</h3>
                 {ordersLoading ? (
                   <div className="space-y-2">
                     {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
@@ -121,7 +121,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
                       <TableRow>
                         <TableHead>ID</TableHead>
                         <TableHead>Data</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Situação</TableHead>
                         <TableHead className="text-right">Total</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -130,7 +130,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
                         <TableRow key={order.id}>
                           <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}</TableCell>
                           <TableCell>{formatDate(order.created_at)}</TableCell>
-                          <TableCell><Badge variant="secondary">{statusLabel(order.status)}</Badge></TableCell>
+                          <TableCell><Badge variant="secondary">{effectiveOrderStatus(order).label}</Badge></TableCell>
                           <TableCell className="text-right font-medium">{formatCurrency(order.total_amount)}</TableCell>
                         </TableRow>
                       ))}

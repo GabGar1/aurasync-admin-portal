@@ -29,11 +29,11 @@ export default function TopProducts({ data, isLoading }: TopProductsProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Top 20 Produtos</CardTitle>
+        <CardTitle>Produtos mais vendidos</CardTitle>
         <Tabs value={view} onValueChange={(v) => setView(v as 'product' | 'category')}>
           <TabsList>
-            <TabsTrigger value="product">Por Produto</TabsTrigger>
-            <TabsTrigger value="category">Por Categoria</TabsTrigger>
+            <TabsTrigger value="product">Por produto</TabsTrigger>
+            <TabsTrigger value="category">Por categoria</TabsTrigger>
           </TabsList>
         </Tabs>
       </CardHeader>

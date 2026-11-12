@@ -107,7 +107,7 @@ export default function CostComponentFormDialog({ open, onOpenChange, component,
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>{component ? 'Editar Componente de Custo' : 'Novo Componente de Custo'}</DialogTitle>
+          <DialogTitle>{component ? 'Editar componente de custo' : 'Novo componente de custo'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -287,8 +287,8 @@ export default function CostComponentFormDialog({ open, onOpenChange, component,
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between rounded-lg border p-3">
                   <div className="space-y-0.5">
-                    <FormLabel>Somente vendas de Feira</FormLabel>
-                    <p className="text-xs text-muted-foreground">Incide apenas quando o pedido é marcado como Feira</p>
+                    <FormLabel>Somente vendas em feira</FormLabel>
+                    <p className="text-xs text-muted-foreground">Incide apenas quando o pedido é marcado como venda em feira</p>
                   </div>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
