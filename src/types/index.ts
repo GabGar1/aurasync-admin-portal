@@ -98,6 +98,12 @@ export interface OrderItem {
   status: boolean;
 }
 
+export interface MissingOrderItem {
+  nuvemshop_variant_id: string;
+  quantity: number;
+  unit_price: number;
+}
+
 export interface Order {
   id: string;
   nuvemshop_order_id: string | null;
@@ -116,6 +122,9 @@ export interface Order {
   monthly_cost_total?: number;
   total_cost_with_monthly?: number;
   monthly_allocations?: MonthlyAllocation[];
+  /** Nuvemshop items whose variant is not registered in AuraSync: their cost is missing from the totals. */
+  missing_items?: MissingOrderItem[];
+  cost_incomplete?: boolean;
   source?: string;
   storefront?: string | null;
   discount_amount: number | null;

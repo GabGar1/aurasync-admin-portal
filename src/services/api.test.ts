@@ -43,6 +43,7 @@ describe('getFriendlyError', () => {
     expect(t('Forbidden: You do not have permission to perform this action.')).toBe('Você não tem permissão para realizar esta ação');
     expect(t('Failed to integrate with Nuvemshop')).toBe('Falha na comunicação com a Nuvemshop');
     expect(t('Synchronization already in progress')).toBe('Já existe uma sincronização em andamento. Aguarde ela terminar.');
+    expect(t('Nuvemshop orders must be changed on Nuvemshop')).toBe('Pedidos da Nuvemshop devem ser alterados na própria Nuvemshop');
   });
 
   it('traduz falhas de comunicação da sincronização de produtos e pedidos', () => {

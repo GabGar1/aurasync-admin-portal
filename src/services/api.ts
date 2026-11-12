@@ -415,6 +415,7 @@ const errorTranslations: Record<string, string> = {
   'Email already registered': 'E-mail já cadastrado',
   'Order not found': 'Pedido não encontrado',
   'Order is already canceled': 'Este pedido já está cancelado',
+  'Nuvemshop orders must be changed on Nuvemshop': 'Pedidos da Nuvemshop devem ser alterados na própria Nuvemshop',
   'Customer not found': 'Cliente não encontrado',
   'Subgroup not found': 'Subgrupo não encontrado',
   'Product not in subgroup': 'O produto não pertence a este subgrupo',

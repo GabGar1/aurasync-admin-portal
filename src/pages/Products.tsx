@@ -6,7 +6,7 @@ import { useTableFilters } from "@/hooks/useTableFilters";
 import { useAuth } from "@/hooks/useAuth";
 import { can } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/formatters";
-import { totalStock, sortProductsByStock } from "@/lib/stock";
+import { totalStock, sortProductsByStock, stockLevel } from "@/lib/stock";
 import { toast } from "sonner";
 import type { ProductVariant } from "@/types";
 
@@ -22,7 +22,17 @@ import DataTablePagination from "@/components/DataTablePagination";
 import { Package, Search, ChevronDown, ChevronUp, RefreshCw, AlertTriangle } from "lucide-react";
 
 function StockIndicator({ quantity }: { quantity: number }) {
-  if (quantity > 10) {
+  const level = stockLevel(quantity);
+  if (level === 'oversold') {
+    return (
+      <span className="text-red-600 font-semibold flex items-center gap-1" title="A Nuvemshop vendeu mais unidades do que o estoque registrado no AuraSync">
+        <span className="h-2 w-2 rounded-full bg-red-600" />
+        {quantity}
+        <Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1.5">Vendido além do estoque</Badge>
+      </span>
+    );
+  }
+  if (level === 'ok') {
     return (
       <span className="text-green-600 font-medium flex items-center gap-1">
         <span className="h-2 w-2 rounded-full bg-green-600" />
@@ -30,7 +40,7 @@ function StockIndicator({ quantity }: { quantity: number }) {
       </span>
     );
   }
-  if (quantity >= 5) {
+  if (level === 'low') {
     return (
       <span className="text-amber-600 font-medium flex items-center gap-1">
         <span className="h-2 w-2 rounded-full bg-amber-600" />

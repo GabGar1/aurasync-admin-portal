@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { totalStock, sortProductsByStock } from './stock';
+import { totalStock, sortProductsByStock, stockLevel } from './stock';
 import type { Product, ProductVariant } from '@/types';
 
 const vars = (qs: (number | null)[]): ProductVariant[] =>
@@ -13,6 +13,17 @@ describe('totalStock', () => {
     expect(totalStock([])).toBe(0);
     expect(totalStock(null)).toBe(0);
     expect(totalStock(undefined)).toBe(0);
+  });
+});
+
+describe('stockLevel', () => {
+  it('classifica o estoque, incluindo venda além do estoque (negativo)', () => {
+    expect(stockLevel(11)).toBe('ok');
+    expect(stockLevel(10)).toBe('low');
+    expect(stockLevel(5)).toBe('low');
+    expect(stockLevel(4)).toBe('restock');
+    expect(stockLevel(0)).toBe('restock');
+    expect(stockLevel(-1)).toBe('oversold');
   });
 });
 

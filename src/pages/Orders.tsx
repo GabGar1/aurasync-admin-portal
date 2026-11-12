@@ -6,6 +6,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTableFilters } from '@/hooks/useTableFilters';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
+import { isEditableLocally } from '@/lib/orders';
 import { formatCurrency, formatDate, statusLabel, sourceLabel, storefrontLabel, paymentMethodLabel, gatewayLabel, effectiveOrderStatus, utmSourceLabel, utmMediumLabel, capitalizeWords } from '@/lib/formatters';
 import { toast } from 'sonner';
 import type { Order, GetOrdersResponse } from '@/types';
@@ -66,6 +67,18 @@ const fulfillmentFilterOptions: { value: string; label: string }[] = [
   { value: 'cancelled', label: 'Cancelado' },
 ];
 
+function CostIncompleteBadge() {
+  return (
+    <Badge
+      variant="outline"
+      className="border-amber-300 text-amber-800"
+      title="Há itens sem cadastro no AuraSync: o custo e o lucro deste pedido estão incompletos"
+    >
+      Custo incompleto
+    </Badge>
+  );
+}
+
 export default function Orders() {
   const { getUser } = useAuth();
   const currentUser = getUser();
@@ -76,7 +89,8 @@ export default function Orders() {
   const fulfillmentFilter = filter?.fulfillment_status ?? 'all';
 
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  // Keep the id, not a copy: the sheet must show the order as refreshed after a change.
+  const [selectedSnapshot, setSelectedSnapshot] = useState<Order | null>(null);
 
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -131,7 +145,7 @@ export default function Orders() {
   });
 
   function handleRowClick(order: Order) {
-    setSelectedOrder(order);
+    setSelectedSnapshot(order);
     setDetailSheetOpen(true);
   }
 
@@ -149,6 +163,9 @@ export default function Orders() {
   }
 
   const orders = data?.orders || [];
+  const selectedOrder = selectedSnapshot
+    ? orders.find((o) => o.id === selectedSnapshot.id) ?? selectedSnapshot
+    : null;
 
   return (
     <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
@@ -252,17 +269,16 @@ export default function Orders() {
 </TableCell>
                       <TableCell>{formatDate(order.created_at)}</TableCell>
                       <TableCell>
-                        {(() => {
-                          return (
-                            <Badge className={statusBadgeClass[effective.key] || ''} variant={effective.key === 'cancelled' ? 'destructive' : 'default'}>
-                              {effective.label}
-                            </Badge>
-                          );
-                        })()}
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Badge className={statusBadgeClass[effective.key] || ''} variant={effective.key === 'cancelled' ? 'destructive' : 'default'}>
+                            {effective.label}
+                          </Badge>
+                          {order.cost_incomplete ? <CostIncompleteBadge /> : null}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right font-medium">{formatCurrency(order.total_amount)}</TableCell>
                       <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                        {admin ? (
+                        {admin && isEditableLocally(order) ? (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -339,11 +355,29 @@ export default function Orders() {
                     {selectedOrder.fulfillment_status_label ? (
                       <Badge variant="outline">{selectedOrder.fulfillment_status_label}</Badge>
                     ) : null}
+                    {selectedOrder.cost_incomplete ? <CostIncompleteBadge /> : null}
                   </div>
                 </SheetDescription>
               </SheetHeader>
 
               <div className="py-6 space-y-8">
+                {selectedOrder.cost_incomplete && selectedOrder.missing_items?.length ? (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Custo incompleto</AlertTitle>
+                    <AlertDescription>
+                      {selectedOrder.missing_items.length === 1 ? 'Um item deste pedido não está' : `${selectedOrder.missing_items.length} itens deste pedido não estão`} cadastrados no AuraSync,
+                      por isso o custo e o lucro não os consideram. Sincronize os produtos com a Nuvemshop e depois os pedidos.
+                      <ul className="mt-2 list-disc pl-4">
+                        {selectedOrder.missing_items.map((item) => (
+                          <li key={item.nuvemshop_variant_id}>
+                            Variação {item.nuvemshop_variant_id} na Nuvemshop: {item.quantity} × {formatCurrency(item.unit_price)}
+                          </li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
                 <section>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cliente</h3>
                   <OrderCustomerInfo customer_name={selectedOrder.customer_name} customer_email={selectedOrder.customer_email} />
@@ -427,13 +461,21 @@ export default function Orders() {
                   />
                 </section>
 
-                {admin ? (
+                {admin && !isEditableLocally(selectedOrder) ? (
+                  <p className="pt-4 border-t text-sm text-muted-foreground">
+                    Pedido da Nuvemshop: a situação é alterada na própria Nuvemshop e chega aqui pela sincronização.
+                  </p>
+                ) : null}
+
+                {admin && isEditableLocally(selectedOrder) ? (
                   <div className="flex gap-2 pt-4 border-t">
                     <Select
                       value={selectedOrder.status}
-                      disabled={effectiveOrderStatus(selectedOrder).key === 'cancelled'}
+                      disabled={updateMutation.isPending}
                       onValueChange={(value) => {
-                        updateMutation.mutate({ id: selectedOrder.id, status: value });
+                        // Cancelling always goes through the confirmation (it returns the stock).
+                        if (value === 'CANCELED') handleCancelClick(selectedOrder.id);
+                        else updateMutation.mutate({ id: selectedOrder.id, status: value });
                       }}
                     >
                       <SelectTrigger className="flex-1">
@@ -467,7 +509,7 @@ export default function Orders() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja cancelar o pedido {cancellingId?.slice(0, 8)}? Esta ação não pode ser desfeita.
+              O pedido {cancellingId?.slice(0, 8)} continua na lista como cancelado e os itens voltam para o estoque.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
