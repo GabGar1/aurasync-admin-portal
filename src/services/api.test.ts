@@ -42,6 +42,13 @@ describe('getFriendlyError', () => {
     expect(t('Only SUPER_ADMIN can set user roles')).toBe('Apenas superadministradores podem definir a função do usuário');
     expect(t('Forbidden: You do not have permission to perform this action.')).toBe('Você não tem permissão para realizar esta ação');
     expect(t('Failed to integrate with Nuvemshop')).toBe('Falha na comunicação com a Nuvemshop');
+    expect(t('Synchronization already in progress')).toBe('Já existe uma sincronização em andamento. Aguarde ela terminar.');
+  });
+
+  it('traduz falhas de comunicação da sincronização de produtos e pedidos', () => {
+    const t = (error: string) => getFriendlyError({ response: { status: 502, data: { error } } });
+    expect(t('Failed to integrate products with Nuvemshop')).toBe('Falha na comunicação com a Nuvemshop');
+    expect(t('Failed to integrate orders with Nuvemshop')).toBe('Falha na comunicação com a Nuvemshop');
   });
 
   it('traduz erros com valores dinâmicos', () => {

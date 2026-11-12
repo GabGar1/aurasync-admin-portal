@@ -436,6 +436,8 @@ const errorTranslations: Record<string, string> = {
   'Token ausente ou inválido!': SESSION_EXPIRED_MESSAGE,
   'Failed to integrate with Nuvemshop': 'Falha na comunicação com a Nuvemshop',
   'Failed to integrate orders with Nuvemshop': 'Falha na comunicação com a Nuvemshop',
+  'Failed to integrate products with Nuvemshop': 'Falha na comunicação com a Nuvemshop',
+  'Synchronization already in progress': 'Já existe uma sincronização em andamento. Aguarde ela terminar.',
   'Failed to create or update order.': 'Não foi possível salvar o pedido',
   'Failed to create or update product.': 'Não foi possível salvar o produto',
   'A product with this slug already exists': 'Já existe um produto com este slug',
