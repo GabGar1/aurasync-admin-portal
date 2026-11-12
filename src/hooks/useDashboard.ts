@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { dashboardApi } from '@/services/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -16,46 +16,51 @@ export function buildDashboardParams(range: DateRange): { days?: number; start_d
   return { days: 30 };
 }
 
+/** Every dashboard query lives under this prefix, so one invalidation refreshes them all. */
+const DASHBOARD_KEY = 'dashboard';
+// Realtime events are the main refresh trigger; polling only covers what has no event (e.g. users).
+const POLL_INTERVAL_MS = 5 * 60_000;
+
 export function useDashboard() {
+  const qc = useQueryClient();
   const [range, setRange] = useState<DateRange>({ from: null, to: null });
-  const [refetchKey, setRefetchKey] = useState(0);
-
-  const triggerRefetch = useCallback(() => {
-    setRefetchKey((k) => k + 1);
-  }, []);
-
-  const params = useCallback(() => buildDashboardParams(range), [range]);
+  const params = buildDashboardParams(range);
 
   const orders = useQuery({
-    queryKey: ['dashboard-orders', range, refetchKey],
-    queryFn: () => dashboardApi.getOrders(params()),
-    refetchInterval: 60000,
+    queryKey: [DASHBOARD_KEY, 'orders', params],
+    queryFn: () => dashboardApi.getOrders(params),
+    refetchInterval: POLL_INTERVAL_MS,
     placeholderData: (prev) => prev,
   });
 
   const marketing = useQuery({
-    queryKey: ['dashboard-marketing', range, refetchKey],
-    queryFn: () => dashboardApi.getMarketing(params()),
-    refetchInterval: 60000,
+    queryKey: [DASHBOARD_KEY, 'marketing', params],
+    queryFn: () => dashboardApi.getMarketing(params),
+    refetchInterval: POLL_INTERVAL_MS,
     placeholderData: (prev) => prev,
   });
 
   const stock = useQuery({
-    queryKey: ['dashboard-stock', refetchKey],
+    queryKey: [DASHBOARD_KEY, 'stock'],
     queryFn: () => dashboardApi.getStock(30),
-    refetchInterval: 60000,
+    refetchInterval: POLL_INTERVAL_MS,
     placeholderData: (prev) => prev,
   });
 
   const userStats = useQuery({
-    queryKey: ['dashboard-user-stats', refetchKey],
+    queryKey: [DASHBOARD_KEY, 'user-stats'],
     queryFn: () => dashboardApi.getUserStats(),
-    refetchInterval: 60000,
+    refetchInterval: POLL_INTERVAL_MS,
     placeholderData: (prev) => prev,
   });
 
-  useWebSocket('products_updated', triggerRefetch);
-  useWebSocket('orders_updated', triggerRefetch);
+  // Refetches the existing queries in place instead of creating new cache entries.
+  const refresh = useCallback(() => {
+    qc.invalidateQueries({ queryKey: [DASHBOARD_KEY] });
+  }, [qc]);
+
+  useWebSocket('products_updated', refresh);
+  useWebSocket('orders_updated', refresh);
 
   return { range, setRange, orders, marketing, stock, userStats };
 }

@@ -416,6 +416,7 @@ const errorTranslations: Record<string, string> = {
   'Order not found': 'Pedido não encontrado',
   'Order is already canceled': 'Este pedido já está cancelado',
   'Nuvemshop orders must be changed on Nuvemshop': 'Pedidos da Nuvemshop devem ser alterados na própria Nuvemshop',
+  'This period overlaps a closing already made for other dates': 'Este período se sobrepõe a um fechamento já feito com outras datas. Feche exatamente o mesmo período ou escolha datas que não se cruzem.',
   'Customer not found': 'Cliente não encontrado',
   'Subgroup not found': 'Subgrupo não encontrado',
   'Product not in subgroup': 'O produto não pertence a este subgrupo',

@@ -28,7 +28,7 @@ export default function CostClosingTab() {
       setLastResult(result);
       toast.success('Fechamento concluído');
       qc.invalidateQueries({ queryKey: ['orders'] });
-      qc.invalidateQueries({ queryKey: ['dashboard-orders'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
     onError: (err) => toast.error(`Falha no fechamento: ${getFriendlyError(err)}`),
   });

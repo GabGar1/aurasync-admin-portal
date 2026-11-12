@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { RealtimeProvider } from '@/contexts/RealtimeContext';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import Products from '@/pages/Products';
@@ -21,21 +22,23 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
-        <TokenExpirationWatcher />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path="/" element={<ProtectedRoute permission="dashboard.view"><Dashboard /></ProtectedRoute>} />
-            <Route path="/products" element={<ProtectedRoute permission="products.view"><Products /></ProtectedRoute>} />
-            <Route path="/orders" element={<ProtectedRoute permission="orders.view"><Orders /></ProtectedRoute>} />
-            <Route path="/inventory" element={<ProtectedRoute permission="inventory.view"><Inventory /></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute permission="users.manage"><Users /></ProtectedRoute>} />
-            <Route path="/costs" element={<ProtectedRoute permission="costs.manage"><Costs /></ProtectedRoute>} />
-            <Route path="/sales" element={<ProtectedRoute permission="sales.create"><Sales /></ProtectedRoute>} />
-            <Route path="/customers" element={<ProtectedRoute permission="customers.view"><Customers /></ProtectedRoute>} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <RealtimeProvider>
+          <TokenExpirationWatcher />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="/" element={<ProtectedRoute permission="dashboard.view"><Dashboard /></ProtectedRoute>} />
+              <Route path="/products" element={<ProtectedRoute permission="products.view"><Products /></ProtectedRoute>} />
+              <Route path="/orders" element={<ProtectedRoute permission="orders.view"><Orders /></ProtectedRoute>} />
+              <Route path="/inventory" element={<ProtectedRoute permission="inventory.view"><Inventory /></ProtectedRoute>} />
+              <Route path="/users" element={<ProtectedRoute permission="users.manage"><Users /></ProtectedRoute>} />
+              <Route path="/costs" element={<ProtectedRoute permission="costs.manage"><Costs /></ProtectedRoute>} />
+              <Route path="/sales" element={<ProtectedRoute permission="sales.create"><Sales /></ProtectedRoute>} />
+              <Route path="/customers" element={<ProtectedRoute permission="customers.view"><Customers /></ProtectedRoute>} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </RealtimeProvider>
       </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
