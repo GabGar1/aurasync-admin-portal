@@ -10,6 +10,7 @@ import { totalStock, sortProductsByStock, stockLevel, variantSummary } from "@/l
 import { activeBadge } from "@/lib/status";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ProductThumb } from "@/components/ProductThumb";
 import { toast } from "sonner";
 import type { ProductVariant } from "@/types";
 
@@ -267,10 +268,15 @@ export default function Products() {
                           }`}
                         />
                       </TableCell>
-                      <TableCell className="py-2.5">
-                        <div className="truncate font-medium">{product.name}</div>
-                        <div className="truncate text-xs text-muted-foreground">
-                          {variantSummary(product.variants)}
+                      <TableCell className="py-2">
+                        <div className="flex items-center gap-3">
+                          <ProductThumb src={product.image_url} alt={product.name} />
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">{product.name}</div>
+                            <div className="truncate text-xs text-muted-foreground">
+                              {variantSummary(product.variants)}
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="py-2.5">

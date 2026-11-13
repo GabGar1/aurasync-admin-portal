@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { rangePresets } from '@/lib/dashboard';
 
 export interface DateRange {
   from: Date | null;
@@ -17,14 +18,6 @@ interface Props {
   onRangeChange: (range: DateRange) => void;
 }
 
-const presets: { label: string; days: number }[] = [
-  { label: '7 dias', days: 7 },
-  { label: '15 dias', days: 15 },
-  { label: '30 dias', days: 30 },
-  { label: '60 dias', days: 60 },
-  { label: '90 dias', days: 90 },
-];
-
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
@@ -32,12 +25,13 @@ function sameDay(a: Date, b: Date) {
 export default function DateRangePicker({ range, onRangeChange }: Props) {
   const [open, setOpen] = useState(false);
   const [pendingStart, setPendingStart] = useState<Date | null>(null);
+  const presets = rangePresets();
+  const activePreset = presets.find(
+    (p) => range.from && range.to && p.range.from && p.range.to && sameDay(p.range.from, range.from) && sameDay(p.range.to, range.to),
+  );
 
-  function applyPreset(days: number) {
-    const to = new Date();
-    const from = new Date();
-    from.setDate(to.getDate() - (days - 1));
-    onRangeChange({ from, to });
+  function applyPreset(preset: DateRange) {
+    onRangeChange(preset);
     setPendingStart(null);
     setOpen(false);
   }
@@ -63,7 +57,9 @@ export default function DateRangePicker({ range, onRangeChange }: Props) {
   }
 
   const isSingleDay = range.from && range.to && sameDay(range.from, range.to);
-  const label = range.from && range.to
+  const label = activePreset
+    ? activePreset.label
+    : range.from && range.to
     ? isSingleDay
       ? format(range.from, 'dd/MM/yyyy', { locale: ptBR })
       : `${format(range.from, 'dd/MM/yyyy', { locale: ptBR })} — ${format(range.to, 'dd/MM/yyyy', { locale: ptBR })}`
@@ -78,15 +74,20 @@ export default function DateRangePicker({ range, onRangeChange }: Props) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className={cn('justify-start text-left font-normal w-[260px]', !range.from && !range.to && 'text-muted-foreground')}>
+        <Button variant="outline" className={cn('w-full justify-start text-left font-normal sm:w-[260px]', !range.from && !range.to && 'text-muted-foreground')}>
           <CalendarIcon className="mr-2 h-4 w-4" />
           {label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="end">
-        <div className="flex gap-1 p-2 border-b">
+      <PopoverContent className="w-auto max-w-[calc(100vw-2rem)] p-0" align="end">
+        <div className="flex flex-wrap gap-1 border-b p-2">
           {presets.map((preset) => (
-            <Button key={preset.days} variant="ghost" size="sm" onClick={() => applyPreset(preset.days)}>
+            <Button
+              key={preset.label}
+              variant={activePreset?.label === preset.label ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => applyPreset(preset.range)}
+            >
               {preset.label}
             </Button>
           ))}

@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency, storefrontLabel, paymentMethodLabel, utmSourceLabel, utmMediumLabel } from '@/lib/formatters';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import type { MarketingResponse } from '@/types';
+import { campaignLabel, categoricalColors } from '@/lib/dashboard';
 
 interface MarketingSectionProps {
   data?: MarketingResponse;
@@ -12,7 +13,7 @@ interface MarketingSectionProps {
 }
 
 function utmCampaignLabel(camp: { campaign: string | null; source?: string | null; medium?: string | null }): string {
-  if (camp.campaign) return camp.campaign;
+  if (camp.campaign) return campaignLabel(camp.campaign);
   if (camp.source || camp.medium) {
     return [utmSourceLabel(camp.source), utmMediumLabel(camp.medium)].filter(Boolean).join(' / ');
   }
@@ -27,7 +28,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Marketing</h2>
+      <h2 className="border-b pb-2 text-lg font-semibold tracking-tight">Marketing</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Storefronts */}
         <Card>
@@ -56,7 +57,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
                 const total = data.by_payment_method.reduce((s, e) => s + e.orders, 0);
                 return (
                   <div className="flex flex-col sm:flex-row items-center gap-6">
-                    <ResponsiveContainer width="55%" height={220}>
+                    <ResponsiveContainer width="100%" height={220} className="sm:!w-[45%]">
                       <PieChart>
                         <Pie
                           data={data.by_payment_method}
@@ -68,7 +69,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
                           innerRadius={50}
                         >
                           {data.by_payment_method.map((entry, i) => (
-                            <Cell key={i} fill={`hsl(${i * 60}, 60%, 60%)`} />
+                            <Cell key={entry.method ?? i} fill={categoricalColors[i % categoricalColors.length]} />
                           ))}
                         </Pie>
                         <Tooltip formatter={(value: number, name: string) => [`${value} pedidos`, paymentMethodLabel(name)]} />
@@ -80,8 +81,8 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
                         return (
                           <li key={i} className="flex items-center justify-between gap-3 text-sm">
                             <span className="flex items-center gap-2 min-w-0">
-                              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: `hsl(${i * 60}, 60%, 60%)` }} />
-                              <span className="truncate">{paymentMethodLabel(entry.method)}</span>
+                              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: categoricalColors[i % categoricalColors.length] }} />
+                              <span>{paymentMethodLabel(entry.method)}</span>
                             </span>
                             <span className="text-muted-foreground shrink-0 tabular-nums">
                               {entry.orders} ({pct.toFixed(1).replace('.', ',')}%)
@@ -116,13 +117,16 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
                     {data.by_campaign.map((camp, i) => (
                       <TableRow key={i}>
                         <TableCell>{utmCampaignLabel(camp)}</TableCell>
-                        <TableCell className="text-right">{camp.orders}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(camp.revenue)}</TableCell>
-                        <TableCell className={`text-right font-medium ${camp.aov > overallAOV ? 'text-success' : ''}`}>{formatCurrency(camp.aov)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{camp.orders}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatCurrency(camp.revenue)}</TableCell>
+                        <TableCell className={`text-right font-medium tabular-nums ${camp.aov > overallAOV ? 'text-success' : ''}`}>{formatCurrency(camp.aov)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Em verde: ticket médio acima da média geral das campanhas ({formatCurrency(overallAOV)}).
+                </p>
               </div>
             )}
           </CardContent>

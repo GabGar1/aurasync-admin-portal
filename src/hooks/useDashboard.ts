@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { dashboardApi } from '@/services/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import type { DateRange } from '@/components/DateRangePicker';
+import { currentMonthRange } from '@/lib/dashboard';
 
 function toLocalDate(date: Date): string {
   return format(date, 'yyyy-MM-dd');
@@ -18,13 +19,23 @@ export function buildDashboardParams(range: DateRange): { days?: number; start_d
 
 /** Every dashboard query lives under this prefix, so one invalidation refreshes them all. */
 const DASHBOARD_KEY = 'dashboard';
-// Realtime events are the main refresh trigger; polling only covers what has no event (e.g. users).
+// Realtime events are the main refresh trigger; polling is only a safety net.
 const POLL_INTERVAL_MS = 5 * 60_000;
+
+/** The period shown by the charts, as store-local dates (falls back to the last 30 days). */
+export function dashboardPeriod(range: DateRange, today: Date = new Date()): { from: string; to: string } {
+  if (range.from && range.to) return { from: toLocalDate(range.from), to: toLocalDate(range.to) };
+  const from = new Date(today);
+  from.setDate(today.getDate() - 30);
+  return { from: toLocalDate(from), to: toLocalDate(today) };
+}
 
 export function useDashboard() {
   const qc = useQueryClient();
-  const [range, setRange] = useState<DateRange>({ from: null, to: null });
+  // Opens on the current month (a period people reason about), not on a rolling window.
+  const [range, setRange] = useState<DateRange>(() => currentMonthRange());
   const params = buildDashboardParams(range);
+  const period = dashboardPeriod(range);
 
   const orders = useQuery({
     queryKey: [DASHBOARD_KEY, 'orders', params],
@@ -47,13 +58,6 @@ export function useDashboard() {
     placeholderData: (prev) => prev,
   });
 
-  const userStats = useQuery({
-    queryKey: [DASHBOARD_KEY, 'user-stats'],
-    queryFn: () => dashboardApi.getUserStats(),
-    refetchInterval: POLL_INTERVAL_MS,
-    placeholderData: (prev) => prev,
-  });
-
   // Refetches the existing queries in place instead of creating new cache entries.
   const refresh = useCallback(() => {
     qc.invalidateQueries({ queryKey: [DASHBOARD_KEY] });
@@ -62,5 +66,5 @@ export function useDashboard() {
   useWebSocket('products_updated', refresh);
   useWebSocket('orders_updated', refresh);
 
-  return { range, setRange, orders, marketing, stock, userStats };
+  return { range, setRange, period, orders, marketing, stock };
 }

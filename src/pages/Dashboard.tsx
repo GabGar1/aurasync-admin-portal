@@ -12,13 +12,12 @@ import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 
 export default function Dashboard() {
-  const { range, setRange, orders, marketing, stock, userStats } = useDashboard();
+  const { range, setRange, period, orders, marketing, stock } = useDashboard();
 
   const isLoadingOrders = orders.isLoading && !orders.data;
   const isLoadingMarketing = marketing.isLoading && !marketing.data;
   const isLoadingStock = stock.isLoading && !stock.data;
-  const isLoadingUsers = userStats.isLoading && !userStats.data;
-  const hasError = [orders, marketing, stock, userStats].some((q) => q.isError);
+  const hasError = [orders, marketing, stock].some((q) => q.isError);
 
   return (
     <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
@@ -42,7 +41,6 @@ export default function Dashboard() {
                 if (orders.isError) orders.refetch();
                 if (marketing.isError) marketing.refetch();
                 if (stock.isError) stock.refetch();
-                if (userStats.isError) userStats.refetch();
               }}
             >
               Tentar novamente
@@ -51,10 +49,10 @@ export default function Dashboard() {
         </Alert>
       ) : null}
 
-      <KpiCards orders={orders.data} userStats={userStats.data} isLoading={isLoadingOrders || isLoadingUsers} />
+      <KpiCards orders={orders.data} isLoading={isLoadingOrders} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RevenueChart data={orders.data?.revenue_trend} isLoading={isLoadingOrders} />
+        <RevenueChart data={orders.data?.revenue_trend} period={period} isLoading={isLoadingOrders} />
         <OrdersCharts
           byHour={orders.data?.by_hour}
           byStatus={orders.data?.by_status}

@@ -7,7 +7,7 @@ import type {
   User, CreateUserPayload, UpdateUserPayload, GetUsersResponse, ChangePasswordPayload, ResetPasswordPayload,
   OrdersResponse, MarketingResponse, StockResponse, UserStats,
   CostComponent, CostComponentPayload, CostAssociation, CostSimulateInput, CostSimulateResponse,
-  ExternalSalePayload, ExternalSaleResult, CreateCustomerPayload,
+  ExternalSalePayload, ExternalSaleResult, ExternalSalePreview, CreateCustomerPayload,
   Customer, CustomerDetail, CustomerOrder, GetCustomersResponse,
   ProductSubgroup, ProductSubgroupPayload, SubgroupAssociation,
   CreditFeeTier, CreditFeeTierUpdate,
@@ -365,6 +365,12 @@ export const costClosingApi = {
 export const externalSalesApi = {
   create: async (payload: ExternalSalePayload): Promise<ExternalSaleResult> => {
     const response = await api.post<ExternalSaleResult>('/external-sales', payload);
+    return response.data;
+  },
+
+  /** Totals, cost and margin of a sale being filled in; nothing is saved. */
+  preview: async (payload: Omit<ExternalSalePayload, 'customer_name'> & { customer_name?: string }): Promise<ExternalSalePreview> => {
+    const response = await api.post<ExternalSalePreview>('/external-sales/preview', payload);
     return response.data;
   },
 

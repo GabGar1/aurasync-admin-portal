@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import type { Order } from '@/types';
-import { isEditableLocally } from '@/lib/orders';
+import { isEditableLocally, orderDisplayId } from '@/lib/orders';
 import { orderStatusBadge, paymentStatusBadge } from '@/lib/status';
 import {
   formatCurrency, statusLabel, sourceLabel, storefrontLabel, paymentMethodLabel, gatewayLabel,
@@ -18,10 +18,6 @@ import OrderCustomerInfo from '@/components/OrderCustomerInfo';
 import OrderItemsTable from '@/components/OrderItemsTable';
 
 const orderStatuses = ['PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED'] as const;
-
-export function orderDisplayId(order: Pick<Order, 'id'>): string {
-  return order.id.slice(0, 8);
-}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -53,7 +49,7 @@ export function OrderDetailSheet({ order, open, onOpenChange, canManage, updatin
           <>
             <SheetHeader className="space-y-2 text-left">
               <SheetTitle className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span>Pedido #{orderDisplayId(order)}</span>
+                <span>Pedido {orderDisplayId(order)}</span>
                 <span className="text-lg font-semibold tabular-nums text-muted-foreground">{formatCurrency(order.total_amount)}</span>
               </SheetTitle>
               <SheetDescription asChild>

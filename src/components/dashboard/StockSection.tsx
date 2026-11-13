@@ -12,8 +12,12 @@ interface StockSectionProps {
 export default function StockSection({ data, isLoading }: StockSectionProps) {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Estoque</h2>
-      <p className="text-xs text-muted-foreground">Os indicadores de estoque consideram sempre os últimos 30 dias, independentemente do período selecionado.</p>
+      <div className="border-b pb-2">
+        <h2 className="text-lg font-semibold tracking-tight">Estoque</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Situação de hoje: não depende do período escolhido acima. "Sem vendas" olha os últimos 30 dias; "estoque parado", os últimos 90.
+        </p>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Low Stock */}
         <Card>

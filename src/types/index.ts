@@ -38,6 +38,8 @@ export interface Product {
   category: string;
   is_active: boolean;
   subgroup_id?: string | null;
+  /** First Nuvemshop image (CDN URL), when the product came from the store. */
+  image_url?: string | null;
   variants: ProductVariant[];
 }
 
@@ -107,6 +109,8 @@ export interface MissingOrderItem {
 export interface Order {
   id: string;
   nuvemshop_order_id: string | null;
+  /** The number the store owner sees on Nuvemshop (#1043). */
+  nuvemshop_order_number?: string | null;
   customer_name: string | null;
   customer_email: string | null;
   status: string;
@@ -238,6 +242,7 @@ export interface TopProductItem {
 
 export interface OrderStatusStats {
   status: string;
+  status_label?: string;
   count: number;
 }
 
@@ -247,7 +252,18 @@ export interface RepeatCustomers {
   repeat_rate: number;
 }
 
+export interface PeriodSummary {
+  revenue: number;
+  orders: number;
+  average_order_value: number;
+  profit: number;
+  margin_percent: number;
+}
+
 export interface OrdersResponse {
+  summary: PeriodSummary;
+  /** Same metrics for the window of the same length right before the selected one. */
+  previous_summary: PeriodSummary;
   by_hour: HourStats[];
   top_products: TopProductItem[];
   average_order_value: number;
@@ -510,6 +526,16 @@ export interface ExternalSalePayload {
   shipping_cost_customer?: number;
   is_fair?: boolean;
   status?: 'PENDING' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
+}
+
+/** Live summary of a sale being filled in (same cost rules as the real sale). */
+export interface ExternalSalePreview {
+  subtotal: number;
+  discount_amount: number;
+  total_amount: number;
+  total_cost: number;
+  total_profit: number;
+  margin_percent: number;
 }
 
 export interface CreateCustomerPayload {

@@ -6,7 +6,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTableFilters } from '@/hooks/useTableFilters';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
-import { isEditableLocally } from '@/lib/orders';
+import { isEditableLocally, orderDisplayId } from '@/lib/orders';
 import { orderStatusBadge } from '@/lib/status';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import { toast } from 'sonner';
@@ -28,7 +28,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
-import { OrderDetailSheet, orderDisplayId } from '@/components/orders/OrderDetailSheet';
+import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet';
 
 const fulfillmentFilterOptions: { value: string; label: string }[] = [
   { value: 'pending', label: 'Pendente' },
@@ -159,6 +159,7 @@ export default function Orders() {
   const orders = data?.orders || [];
   const selectedOrder = selectedSnapshot ? orders.find((o) => o.id === selectedSnapshot.id) ?? selectedSnapshot : null;
   const canAct = (order: Order) => admin && isEditableLocally(order);
+  const cancellingOrder = cancellingId ? orders.find((o) => o.id === cancellingId) ?? null : null;
 
   return (
     <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
@@ -177,7 +178,7 @@ export default function Orders() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Pesquisar por cliente ou ID..."
+            placeholder="Pesquisar por cliente ou nº do pedido..."
             aria-label="Pesquisar pedidos"
             className="pl-9"
             value={search}
@@ -234,7 +235,7 @@ export default function Orders() {
                       <span className="shrink-0 font-semibold tabular-nums">{formatCurrency(order.total_amount)}</span>
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      <span className="font-mono">#{orderDisplayId(order)}</span> · {formatDate(order.created_at)}
+                      <span className="font-mono">{orderDisplayId(order)}</span> · {formatDate(order.created_at)}
                     </div>
                     <div className="mt-2"><OrderBadges order={order} /></div>
                   </button>
@@ -277,7 +278,7 @@ export default function Orders() {
                 ) : (
                   orders.map((order) => (
                     <TableRow key={order.id} className="cursor-pointer" onClick={() => openOrder(order)}>
-                      <TableCell className="py-2.5 font-mono text-xs">#{orderDisplayId(order)}</TableCell>
+                      <TableCell className="py-2.5 font-mono text-xs">{orderDisplayId(order)}</TableCell>
                       <TableCell className="py-2.5 font-medium"><div className="truncate">{order.customer_name}</div></TableCell>
                       <TableCell className="py-2.5 tabular-nums">{formatDate(order.created_at)}</TableCell>
                       <TableCell className="py-2.5"><OrderBadges order={order} /></TableCell>
@@ -319,7 +320,7 @@ export default function Orders() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
             <AlertDialogDescription>
-              O pedido {cancellingId?.slice(0, 8)} continua na lista como cancelado e os itens voltam para o estoque.
+              O pedido {cancellingOrder ? orderDisplayId(cancellingOrder) : ''} continua na lista como cancelado e os itens voltam para o estoque.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

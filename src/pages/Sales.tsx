@@ -7,7 +7,10 @@ import { Loader2, Plus, Trash2, Wallet, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { externalSalesApi, getFriendlyError } from '@/services/api';
 import { externalSaleSchema, type ExternalSaleFormValues } from '@/lib/schemas';
-import { paymentMethodLabel, statusLabel } from '@/lib/formatters';
+import { formatCurrency, paymentMethodLabel, statusLabel } from '@/lib/formatters';
+import { isPreviewable, toExternalSalePayload } from '@/lib/sales';
+import { useSalePreview } from '@/hooks/useSalePreview';
+import { SaleSummary } from '@/components/sales/SaleSummary';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -72,23 +75,7 @@ export default function Sales() {
   }
 
   const createMutation = useMutation({
-    mutationFn: (payload: ExternalSaleFormValues) => externalSalesApi.create({
-      customer_name: payload.customer_name.trim(),
-      customer_email: payload.customer_email?.trim() ? payload.customer_email.trim() : undefined,
-      items: payload.items.map((item) => ({
-        variant_id: item.variant_id,
-        quantity: Number(item.quantity),
-        unit_price: Number(item.unit_price),
-      })),
-      discount_amount: payload.discount_amount === undefined ? undefined : Number(payload.discount_amount),
-      payment_method: payload.payment_method || undefined,
-      gateway: payload.gateway?.trim() ? payload.gateway.trim() : undefined,
-      payment_installments: payload.payment_installments === undefined ? undefined : Number(payload.payment_installments),
-      shipping_cost_owner: payload.shipping_cost_owner === undefined ? undefined : Number(payload.shipping_cost_owner),
-      shipping_cost_customer: payload.shipping_cost_customer === undefined ? undefined : Number(payload.shipping_cost_customer),
-      is_fair: payload.is_fair ?? false,
-      status: payload.status,
-    }),
+    mutationFn: (values: ExternalSaleFormValues) => externalSalesApi.create(toExternalSalePayload(values)),
     onSuccess: (sale) => {
       toast.success('Venda registrada com sucesso');
       setResultSale(sale);
@@ -114,6 +101,8 @@ export default function Sales() {
   });
 
   const customerEmail = form.watch('customer_email');
+  const livePayload = toExternalSalePayload(form.watch());
+  const preview = useSalePreview(livePayload);
 
   if (!admin) {
     return (
@@ -131,8 +120,12 @@ export default function Sales() {
     <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
       <PageHeader title="Venda externa" description="Registre vendas feitas fora da loja online, como em feiras e no WhatsApp" />
 
-      <form onSubmit={form.handleSubmit((values) => createMutation.mutate(values))} className="w-full max-w-6xl space-y-6">
-        <div className="space-y-4 border-input rounded-lg p-4">
+      <form
+        onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
+        className="grid w-full max-w-6xl items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+      >
+        <div className="min-w-0 space-y-6">
+        <div className="space-y-4 rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Cliente</h3>
             <Button type="button" variant="outline" size="sm" onClick={() => setCustomerDialogOpen(true)}>
@@ -146,7 +139,7 @@ export default function Sales() {
               form.setValue('customer_email', customer.email ?? '');
             }}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="sale-customer-name">Nome *</Label>
               <Input
@@ -178,7 +171,7 @@ export default function Sales() {
           ) : null}
         </div>
 
-        <div className="space-y-4 border-input rounded-lg p-4">
+        <div className="space-y-4 rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Itens</h3>
             <Button type="button" variant="outline" size="sm" onClick={addItem}>
@@ -187,7 +180,7 @@ export default function Sales() {
             </Button>
           </div>
           {fields.map((field, index) => (
-            <div key={field.id} className="space-y-2 border-input rounded-md p-3">
+            <div key={field.id} className="space-y-2 rounded-md border p-3">
               <div className="space-y-2">
                 <Label>Produto</Label>
                 <VariantPicker
@@ -199,7 +192,7 @@ export default function Sales() {
                 <p className="text-sm text-destructive">{form.formState.errors.items[index].variant_id.message}</p>
               ) : null}
               <div className="flex gap-2">
-                <div className="flex-1">
+                <div className="w-32 sm:w-40">
                   <Label>Preço (R$)</Label>
                   <Input
                     type="number"
@@ -212,7 +205,7 @@ export default function Sales() {
                     <p className="text-sm text-destructive">{form.formState.errors.items[index].unit_price.message}</p>
                   ) : null}
                 </div>
-                <div className="w-24">
+                <div className="w-20">
                   <Label>Qtd</Label>
                   <Input
                     type="number"
@@ -222,6 +215,12 @@ export default function Sales() {
                   {form.formState.errors.items?.[index]?.quantity ? (
                     <p className="text-sm text-destructive">{form.formState.errors.items[index].quantity.message}</p>
                   ) : null}
+                </div>
+                <div className="flex-1 text-right">
+                  <Label className="text-muted-foreground">Subtotal</Label>
+                  <p className="mt-2 font-medium tabular-nums">
+                    {formatCurrency((livePayload.items[index]?.unit_price || 0) * (livePayload.items[index]?.quantity || 0))}
+                  </p>
                 </div>
                 <Button
                   type="button"
@@ -241,9 +240,9 @@ export default function Sales() {
           ) : null}
         </div>
 
-        <div className="space-y-4 border-input rounded-lg p-4">
+        <div className="space-y-4 rounded-lg border bg-card p-4">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pagamento e frete</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Forma de pagamento</Label>
               <Select value={form.watch('payment_method')} onValueChange={(value) => form.setValue('payment_method', value)}>
@@ -260,7 +259,7 @@ export default function Sales() {
               <Input id="sale-gateway" placeholder="Ex: Mercado Pago" {...form.register('gateway')} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="sale-discount">Desconto (R$)</Label>
               <Input id="sale-discount" type="number" step="0.01" min="0" placeholder="0,00" {...form.register('discount_amount')} />
@@ -281,7 +280,7 @@ export default function Sales() {
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="sale-shipping-owner">Frete pago pela loja (R$)</Label>
               <Input id="sale-shipping-owner" type="number" step="0.01" min="0" placeholder="0,00" {...form.register('shipping_cost_owner')} />
@@ -300,11 +299,20 @@ export default function Sales() {
             <Label htmlFor="sale-is-fair" className="cursor-pointer">Venda em feira</Label>
           </div>
         </div>
+        </div>
 
-        <Button type="submit" disabled={createMutation.isPending} className="w-full sm:w-auto">
-          {createMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wallet className="h-4 w-4 mr-2" />}
-          Registrar venda
-        </Button>
+        <SaleSummary
+          ready={isPreviewable(livePayload)}
+          loading={preview.isFetching}
+          preview={preview.data}
+          error={preview.isError ? getFriendlyError(preview.error) : null}
+          action={
+            <Button type="submit" disabled={createMutation.isPending} className="w-full">
+              {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wallet className="mr-2 h-4 w-4" />}
+              Registrar venda
+            </Button>
+          }
+        />
       </form>
 
       <CreateCustomerDialog
