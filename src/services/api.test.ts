@@ -44,6 +44,7 @@ describe('getFriendlyError', () => {
     expect(t('Failed to integrate with Nuvemshop')).toBe('Falha na comunicação com a Nuvemshop');
     expect(t('Synchronization already in progress')).toBe('Já existe uma sincronização em andamento. Aguarde ela terminar.');
     expect(t('Nuvemshop orders must be changed on Nuvemshop')).toBe('Pedidos da Nuvemshop devem ser alterados na própria Nuvemshop');
+    expect(t('A credit fee tier for this number of installments already exists')).toBe('Já existe uma faixa para esse número de parcelas. Edite a faixa existente.');
     expect(t('This period overlaps a closing already made for other dates')).toBe('Este período se sobrepõe a um fechamento já feito com outras datas. Feche exatamente o mesmo período ou escolha datas que não se cruzem.');
   });
 

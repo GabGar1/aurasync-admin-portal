@@ -75,6 +75,23 @@ export function rangePresets(today: Date = new Date()): RangePreset[] {
   ];
 }
 
+/** "outubro de 2026" -> "Outubro de 2026" (CSS capitalize would also capitalize "De"). */
+export function monthLabel(date: Date): string {
+  const label = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** Months to pick from (newest first), e.g. for the monthly cost closing. */
+export function monthOptions(today: Date = new Date(), count = 18): { value: string; label: string }[] {
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    return {
+      value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      label: monthLabel(d),
+    };
+  });
+}
+
 /** The default period of the dashboard: the current month so far. */
 export function currentMonthRange(today: Date = new Date()): DateRange {
   return rangePresets(today)[0]!.range;

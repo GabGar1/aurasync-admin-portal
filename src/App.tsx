@@ -35,8 +35,9 @@ const App = () => (
               <Route path="/costs" element={<ProtectedRoute permission="costs.manage"><Costs /></ProtectedRoute>} />
               <Route path="/sales" element={<ProtectedRoute permission="sales.create"><Sales /></ProtectedRoute>} />
               <Route path="/customers" element={<ProtectedRoute permission="customers.view"><Customers /></ProtectedRoute>} />
+              {/* Inside the layout: unknown links keep the menu (signed-out users go to the login first). */}
+              <Route path="*" element={<NotFound />} />
             </Route>
-            <Route path="*" element={<NotFound />} />
           </Routes>
         </RealtimeProvider>
       </AuthProvider>

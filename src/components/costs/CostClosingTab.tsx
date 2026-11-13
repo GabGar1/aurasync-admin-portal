@@ -1,37 +1,56 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarCheck, CalendarRange, Loader2, Lock } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CalendarCheck, CalendarRange, Loader2, Lock, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { costClosingApi, getFriendlyError } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
-import { allocationBasisLabel, formatDateOnly, typeLabel } from '@/lib/formatters';
+import { allocationBasisLabel, formatCurrency, formatDateOnly, formatDateTime, typeLabel } from '@/lib/formatters';
+import { monthLabel, monthOptions } from '@/lib/dashboard';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import type { CostClosingResponse } from '@/types';
+import type { CostClosingRecord, CostClosingResponse } from '@/types';
+
+/** "2026-08-01".."2026-09-01" (end exclusive) -> "agosto de 2026"; other ranges as dates. */
+function periodLabel(start: string, end: string) {
+  const s = new Date(`${start}T12:00:00`);
+  const e = new Date(`${end}T12:00:00`);
+  const isWholeMonth = s.getDate() === 1 && e.getDate() === 1 && (e.getMonth() - s.getMonth() + 12) % 12 === 1;
+  if (isWholeMonth) return monthLabel(s);
+  e.setDate(e.getDate() - 1);
+  return `${formatDateOnly(start)} a ${e.toLocaleDateString('pt-BR')}`;
+}
 
 export default function CostClosingTab() {
   const { getUser } = useAuth();
   const admin = isAdmin(getUser()?.role);
   const qc = useQueryClient();
+  const months = monthOptions();
 
-  const [month, setMonth] = useState('');
+  // Default: the previous month, the one usually being closed.
+  const [month, setMonth] = useState(months[1]?.value ?? months[0]!.value);
   const [lastResult, setLastResult] = useState<CostClosingResponse | null>(null);
 
+  const history = useQuery({ queryKey: ['cost-closings'], queryFn: costClosingApi.list });
+
   const closeMutation = useMutation({
-    mutationFn: () => costClosingApi.close({ month }),
+    mutationFn: (value: string) => costClosingApi.close({ month: value }),
     onSuccess: (result) => {
       setLastResult(result);
       toast.success('Fechamento concluído');
+      qc.invalidateQueries({ queryKey: ['cost-closings'] });
       qc.invalidateQueries({ queryKey: ['orders'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
     onError: (err) => toast.error(`Falha no fechamento: ${getFriendlyError(err)}`),
   });
+
+  const closings: CostClosingRecord[] = history.data ?? [];
 
   return (
     <div className="flex flex-col space-y-6">
@@ -39,23 +58,24 @@ export default function CostClosingTab() {
         <CardHeader>
           <CardTitle>Fechar mês</CardTitle>
           <CardDescription>
-            Distribui os custos mensais (contador, aluguel, assinaturas…) entre os pedidos do mês selecionado.
+            Distribui os custos fixos do mês (contador, aluguel, assinaturas…) entre os pedidos daquele mês, para o lucro de cada pedido refletir o custo real.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {admin ? (
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Input
-                type="month"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                className="sm:max-w-[220px]"
-              />
-              <Button
-                onClick={() => closeMutation.mutate()}
-                disabled={!month || closeMutation.isPending}
-              >
-                {closeMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CalendarCheck className="h-4 w-4 mr-2" />}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Select value={month} onValueChange={setMonth}>
+                <SelectTrigger className="sm:max-w-[240px]" aria-label="Mês a fechar">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={() => closeMutation.mutate(month)} disabled={closeMutation.isPending}>
+                {closeMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarCheck className="mr-2 h-4 w-4" />}
                 Fechar mês
               </Button>
             </div>
@@ -66,7 +86,7 @@ export default function CostClosingTab() {
             </div>
           )}
           <p className="text-sm text-muted-foreground">
-            Você pode fechar o mesmo mês mais de uma vez: os valores são recalculados e substituem o fechamento anterior.
+            Fechar de novo o mesmo mês recalcula e substitui o fechamento anterior (útil depois de lançar um custo esquecido).
           </p>
         </CardContent>
       </Card>
@@ -74,31 +94,23 @@ export default function CostClosingTab() {
       {lastResult ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">
-              {formatDateOnly(lastResult.period.start)} — {formatDateOnly(lastResult.period.end)}
-            </CardTitle>
-            <CardDescription>Resultado do fechamento mensal</CardDescription>
+            <CardTitle>{periodLabel(lastResult.period.start, lastResult.period.end)}</CardTitle>
+            <CardDescription>Resultado do fechamento que você acabou de fazer</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Pedidos</p>
-                <p className="text-2xl font-semibold">{lastResult.orders}</p>
-              </div>
-              <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Produtos</p>
-                <p className="text-2xl font-semibold">{lastResult.products}</p>
-              </div>
-              <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Rateios</p>
-                <p className="text-2xl font-semibold">{lastResult.allocations}</p>
-              </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {[['Pedidos', lastResult.orders], ['Produtos vendidos', lastResult.products], ['Rateios gerados', lastResult.allocations]].map(([label, value]) => (
+                <div key={label as string} className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">{label}</p>
+                  <p className="text-2xl font-semibold tabular-nums">{value}</p>
+                </div>
+              ))}
             </div>
             <div>
-              <h4 className="text-sm font-semibold mb-2">Componentes mensais</h4>
+              <h4 className="mb-2 text-sm font-semibold">Custos mensais considerados</h4>
               {lastResult.components.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">
-                  Nenhum componente mensal ativo no período.
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Nenhum custo mensal ativo no período. Cadastre-os na aba Componentes com o tipo mensal.
                 </p>
               ) : (
                 <Table>
@@ -106,7 +118,7 @@ export default function CostClosingTab() {
                     <TableRow>
                       <TableHead>Nome</TableHead>
                       <TableHead>Tipo</TableHead>
-                      <TableHead>Base de rateio</TableHead>
+                      <TableHead>Como é dividido</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -123,13 +135,68 @@ export default function CostClosingTab() {
             </div>
           </CardContent>
         </Card>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <CalendarRange className="h-12 w-12 mb-4" />
-          <p className="text-lg font-medium">Nenhum fechamento ainda</p>
-          <p className="text-sm">Selecione um mês e clique em "Fechar mês" para gerar as alocações mensais.</p>
-        </div>
-      )}
+      ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Fechamentos feitos</CardTitle>
+          <CardDescription>Meses já fechados e quanto de custo fixo foi distribuído em cada um.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {history.isLoading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+          ) : closings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+              <CalendarRange className="mb-3 h-10 w-10" />
+              <p className="font-medium">Nenhum mês fechado ainda</p>
+              <p className="text-sm">Escolha um mês acima e clique em "Fechar mês".</p>
+            </div>
+          ) : (
+            <div className="-mx-2 overflow-x-auto px-2">
+              <Table className="min-w-[520px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Período</TableHead>
+                    <TableHead className="text-right">Pedidos</TableHead>
+                    <TableHead className="text-right">Custo distribuído</TableHead>
+                    <TableHead>Fechado em</TableHead>
+                    {admin ? <TableHead className="w-[1%]"><span className="sr-only">Ações</span></TableHead> : null}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {closings.map((c) => {
+                    const isMonth = /^\d{4}-\d{2}-01$/.test(c.period_start);
+                    return (
+                      <TableRow key={`${c.period_start}-${c.period_end}`}>
+                        <TableCell className="font-medium">{periodLabel(c.period_start, c.period_end)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{c.orders}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatCurrency(c.total_allocated)}</TableCell>
+                        <TableCell className="tabular-nums text-muted-foreground">{formatDateTime(c.closed_at)}</TableCell>
+                        {admin ? (
+                          <TableCell>
+                            {isMonth ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={closeMutation.isPending}
+                                onClick={() => closeMutation.mutate(c.period_start.slice(0, 7))}
+                                title="Recalcular este mês"
+                              >
+                                <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                                Recalcular
+                              </Button>
+                            ) : null}
+                          </TableCell>
+                        ) : null}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

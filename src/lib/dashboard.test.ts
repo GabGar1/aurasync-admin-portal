@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { periodDelta, fillDailySeries, rangePresets, campaignLabel, fulfillmentTone } from './dashboard';
+import { periodDelta, fillDailySeries, rangePresets, campaignLabel, fulfillmentTone, monthOptions } from './dashboard';
+
+describe('monthOptions', () => {
+  it('lista os meses mais recentes primeiro, com rótulo em português', () => {
+    const options = monthOptions(new Date(2026, 10, 12), 3);
+    expect(options).toEqual([
+      { value: '2026-11', label: 'Novembro de 2026' },
+      { value: '2026-10', label: 'Outubro de 2026' },
+      { value: '2026-09', label: 'Setembro de 2026' },
+    ]);
+  });
+});
 
 describe('periodDelta', () => {
   it('calcula a variação percentual em relação ao período anterior', () => {

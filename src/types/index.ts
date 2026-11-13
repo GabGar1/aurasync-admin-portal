@@ -168,12 +168,23 @@ export interface InventoryTransaction {
   variant_id: string;
   type: 'SALE' | 'RESTOCK' | 'ADJUSTMENT';
   quantity_changed: number;
-  order_id?: string;
+  order_id?: string | null;
   created_at: string;
+  product_name?: string;
+  variant_name?: string | null;
+  sku?: string | null;
+}
+
+export interface InventorySummary {
+  entries: number;
+  exits: number;
+  movements: number;
 }
 
 export interface GetInventoryResponse {
   transactions: InventoryTransaction[];
+  /** Totals of everything matching the filters (not only this page). */
+  summary?: InventorySummary;
   total: number;
   page: number;
   limit: number;
@@ -459,6 +470,21 @@ export interface CostClosingComponent {
   name: string;
   type: string;
   allocation_basis: string | null;
+}
+
+/** A closed period: how many orders received monthly costs and how much was distributed. */
+export interface CostClosingRecord {
+  period_start: string;
+  period_end: string;
+  orders: number;
+  total_allocated: number;
+  closed_at: string;
+}
+
+export interface CreditFeeTierCreate {
+  installments: number;
+  percent: number;
+  fixed_fee: number;
 }
 
 export interface CostClosingResponse {

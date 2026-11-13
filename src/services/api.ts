@@ -8,6 +8,7 @@ import type {
   OrdersResponse, MarketingResponse, StockResponse, UserStats,
   CostComponent, CostComponentPayload, CostAssociation, CostSimulateInput, CostSimulateResponse,
   ExternalSalePayload, ExternalSaleResult, ExternalSalePreview, CreateCustomerPayload,
+  CostClosingRecord, CreditFeeTierCreate,
   Customer, CustomerDetail, CustomerOrder, GetCustomersResponse,
   ProductSubgroup, ProductSubgroupPayload, SubgroupAssociation,
   CreditFeeTier, CreditFeeTierUpdate,
@@ -199,7 +200,7 @@ export const ordersApi = {
 };
 
 export const inventoryApi = {
-  getAll: async (params?: { page?: number; limit?: number }): Promise<GetInventoryResponse> => {
+  getAll: async (params?: { page?: number; limit?: number; type?: string; search?: string }): Promise<GetInventoryResponse> => {
     const response = await api.get<GetInventoryResponse>('/inventory', { params });
     return response.data;
   },
@@ -353,11 +354,19 @@ export const creditFeeTiersApi = {
     const response = await api.put<CreditFeeTier>(`/credit-fee-tiers/${id}`, payload);
     return response.data;
   },
+  create: async (payload: CreditFeeTierCreate): Promise<CreditFeeTier> => {
+    const response = await api.post<CreditFeeTier>('/credit-fee-tiers', payload);
+    return response.data;
+  },
 };
 
 export const costClosingApi = {
   close: async (payload: CostClosingInput): Promise<CostClosingResponse> => {
     const response = await api.post<CostClosingResponse>('/cost-closing', payload);
+    return response.data;
+  },
+  list: async (): Promise<CostClosingRecord[]> => {
+    const response = await api.get<CostClosingRecord[]>('/cost-closing');
     return response.data;
   },
 };
@@ -422,6 +431,7 @@ const errorTranslations: Record<string, string> = {
   'Order not found': 'Pedido não encontrado',
   'Order is already canceled': 'Este pedido já está cancelado',
   'Nuvemshop orders must be changed on Nuvemshop': 'Pedidos da Nuvemshop devem ser alterados na própria Nuvemshop',
+  'A credit fee tier for this number of installments already exists': 'Já existe uma faixa para esse número de parcelas. Edite a faixa existente.',
   'This period overlaps a closing already made for other dates': 'Este período se sobrepõe a um fechamento já feito com outras datas. Feche exatamente o mesmo período ou escolha datas que não se cruzem.',
   'Customer not found': 'Cliente não encontrado',
   'Subgroup not found': 'Subgrupo não encontrado',
