@@ -9,7 +9,8 @@ export default defineConfig(() => ({
     port: 8080,
     proxy: {
       "/api": {
-        target: "http://localhost:3333",
+        // API_PROXY_TARGET lets the panel point at another API (e.g. the demo one on another port).
+        target: process.env.API_PROXY_TARGET ?? "http://localhost:3333",
         changeOrigin: true,
       },
     },
