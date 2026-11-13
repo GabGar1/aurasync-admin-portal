@@ -131,7 +131,7 @@ export default function SimulateCostDialog({ open, onOpenChange }: Props) {
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-semibold">Lucro unitário</TableCell>
-                    <TableCell className="text-right font-semibold text-green-700">{formatCurrency(result.unit_profit)}</TableCell>
+                    <TableCell className="text-right font-semibold text-success">{formatCurrency(result.unit_profit)}</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-semibold">Margem</TableCell>

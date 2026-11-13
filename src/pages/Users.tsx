@@ -7,12 +7,14 @@ import { useTableFilters } from '@/hooks/useTableFilters';
 import { useAuth } from '@/hooks/useAuth';
 import { can } from '@/lib/permissions';
 import PasswordForm from '@/components/PasswordForm';
-import { formatDate, roleLabel } from '@/lib/formatters';
+import { formatDate } from '@/lib/formatters';
+import { activeBadge, roleBadge } from '@/lib/status';
+import { PageHeader } from '@/components/PageHeader';
+import { StatusBadge } from '@/components/StatusBadge';
 import { toast } from 'sonner';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -23,22 +25,30 @@ import { Skeleton } from '@/components/ui/skeleton';
 import DataTablePagination from '@/components/DataTablePagination';
 import { Label } from '@/components/ui/label';
 
-function RoleBadge({ role }: { role: string }) {
-  if (role === 'ADMIN') {
-    return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">{roleLabel(role)}</Badge>;
-  }
-  if (role === 'SUPER_ADMIN') {
-    return <Badge variant="outline" className="text-purple-700 border-purple-300">{roleLabel(role)}</Badge>;
-  }
-  return <Badge variant="secondary">{roleLabel(role)}</Badge>;
+interface UserActionsProps {
+  user: User;
+  canDelete: boolean;
+  onEdit: () => void;
+  onPassword: () => void;
+  onDelete: () => void;
 }
 
-function StatusDisplay({ status }: { status: boolean }) {
+function UserActions({ user, canDelete, onEdit, onPassword, onDelete }: UserActionsProps) {
   return (
-    <span className="flex items-center gap-1.5">
-      <span className={`h-2 w-2 rounded-full ${status ? 'bg-green-500' : 'bg-gray-400'}`} />
-      <span className="text-sm">{status ? 'Ativo' : 'Inativo'}</span>
-    </span>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Ações de ${user.first_name} ${user.last_name}`}>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onEdit}>Editar</DropdownMenuItem>
+        <DropdownMenuItem onClick={onPassword}>Redefinir senha</DropdownMenuItem>
+        {canDelete ? (
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>Excluir</DropdownMenuItem>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -152,27 +162,24 @@ export default function Users() {
   }
 
   return (
-    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
-      <div className="shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Usuários</h1>
-            <p className="text-sm text-muted-foreground">Gerenciamento de usuários do sistema</p>
-          </div>
-          {admin && (
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Novo usuário
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
+      <PageHeader
+        title="Usuários"
+        description="Quem acessa o AuraSync e com qual função"
+        actions={admin ? (
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="mr-1 h-4 w-4" />
+            Novo usuário
+          </Button>
+        ) : null}
+      />
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Pesquisar por nome ou e-mail..."
+            aria-label="Pesquisar usuários"
             className="pl-9"
             value={search}
             onChange={(e) => { changeSearch(e.target.value); }}
@@ -182,7 +189,7 @@ export default function Users() {
           value={roleFilter}
           onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { role: value }); }}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="sm:w-[200px]" aria-label="Filtrar por função">
             <SelectValue placeholder="Filtrar por função" />
           </SelectTrigger>
           <SelectContent>
@@ -220,14 +227,41 @@ export default function Users() {
         </div>
       ) : (
         <>
-          <Table className="table-fixed">
+          {/* Phones: cards */}
+          <ul className="space-y-2 md:hidden" aria-label="Usuários">
+            {isLoading
+              ? Array.from({ length: 5 }).map((_, i) => <li key={i}><Skeleton className="h-20 w-full rounded-lg" /></li>)
+              : users.map((user) => (
+                <li key={user.id} className="flex items-start gap-2 rounded-lg border bg-card p-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{user.first_name} {user.last_name}</div>
+                    <div className="truncate text-sm text-muted-foreground">{user.email}</div>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <StatusBadge {...roleBadge(user.role)} />
+                      <StatusBadge {...activeBadge(user.status)} dot />
+                    </div>
+                  </div>
+                  {canManageUser(user) ? (
+                    <UserActions
+                      user={user}
+                      canDelete={canDeleteUser(user)}
+                      onEdit={() => handleEditClick(user)}
+                      onPassword={() => handlePasswordClick(user)}
+                      onDelete={() => handleDeleteClick(user)}
+                    />
+                  ) : null}
+                </li>
+              ))}
+          </ul>
+
+          <Table className="hidden table-fixed md:table">
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Situação</TableHead>
-                <TableHead>Criado em</TableHead>
-                {admin && <TableHead className="w-[80px] text-center">Ações</TableHead>}
+                <TableHead className="w-[22%]">Função</TableHead>
+                <TableHead className="w-[14%]">Situação</TableHead>
+                <TableHead className="w-[14%]">Criado em</TableHead>
+                {admin && <TableHead className="w-[64px] text-center"><span className="sr-only">Ações</span></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -247,42 +281,25 @@ export default function Users() {
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="font-medium">{user.first_name} {user.last_name}</div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
+                    <TableCell className="py-2.5">
+                      <div className="truncate font-medium">{user.first_name} {user.last_name}</div>
+                      <div className="truncate text-sm text-muted-foreground" title={user.email}>{user.email}</div>
                     </TableCell>
-                    <TableCell>
-                      <RoleBadge role={user.role} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusDisplay status={user.status} />
-                    </TableCell>
-                    <TableCell>{formatDate(user.created_at)}</TableCell>
-                    {canManageUser(user) && (
-                      <TableCell className="text-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditClick(user)}>
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handlePasswordClick(user)}>
-                              Redefinir senha
-                            </DropdownMenuItem>
-                            {canDeleteUser(user) ? (
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleDeleteClick(user)}
-                              >
-                                Excluir
-                              </DropdownMenuItem>
-                            ) : null}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                    <TableCell className="py-2.5"><StatusBadge {...roleBadge(user.role)} /></TableCell>
+                    <TableCell className="py-2.5"><StatusBadge {...activeBadge(user.status)} dot /></TableCell>
+                    <TableCell className="py-2.5 tabular-nums">{formatDate(user.created_at)}</TableCell>
+                    {/* Always render the cell so columns stay aligned when the row cannot be managed. */}
+                    {admin && (
+                      <TableCell className="py-2.5 text-center">
+                        {canManageUser(user) ? (
+                          <UserActions
+                            user={user}
+                            canDelete={canDeleteUser(user)}
+                            onEdit={() => handleEditClick(user)}
+                            onPassword={() => handlePasswordClick(user)}
+                            onDelete={() => handleDeleteClick(user)}
+                          />
+                        ) : null}
                       </TableCell>
                     )}
                   </TableRow>

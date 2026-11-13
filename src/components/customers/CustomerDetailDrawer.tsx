@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { CreditCard, Globe, Repeat, AlertTriangle } from 'lucide-react';
 import { customersApi } from '@/services/api';
-import { formatCurrency, formatDate, paymentMethodLabel, gatewayLabel, effectiveOrderStatus } from '@/lib/formatters';
+import { formatCurrency, formatDate, paymentMethodLabel, gatewayLabel } from '@/lib/formatters';
+import { orderStatusBadge } from '@/lib/status';
+import { StatusBadge } from '@/components/StatusBadge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,7 +37,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[560px] sm:max-w-[560px] overflow-y-auto">
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
         {customer ? (
           <>
             <SheetHeader>
@@ -130,7 +132,7 @@ export default function CustomerDetailDrawer({ open, onOpenChange, customer }: P
                         <TableRow key={order.id}>
                           <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}</TableCell>
                           <TableCell>{formatDate(order.created_at)}</TableCell>
-                          <TableCell><Badge variant="secondary">{effectiveOrderStatus(order).label}</Badge></TableCell>
+                          <TableCell><StatusBadge {...orderStatusBadge(order)} /></TableCell>
                           <TableCell className="text-right font-medium">{formatCurrency(order.total_amount)}</TableCell>
                         </TableRow>
                       ))}

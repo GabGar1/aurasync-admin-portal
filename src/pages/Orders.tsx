@@ -7,17 +7,15 @@ import { useTableFilters } from '@/hooks/useTableFilters';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdmin } from '@/lib/utils';
 import { isEditableLocally } from '@/lib/orders';
-import { formatCurrency, formatDate, statusLabel, sourceLabel, storefrontLabel, paymentMethodLabel, gatewayLabel, effectiveOrderStatus, utmSourceLabel, utmMediumLabel, capitalizeWords } from '@/lib/formatters';
+import { orderStatusBadge } from '@/lib/status';
+import { formatCurrency, formatDate } from '@/lib/formatters';
 import { toast } from 'sonner';
 import type { Order, GetOrdersResponse } from '@/types';
-import type { UseMutationResult } from '@tanstack/react-query';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import DataTablePagination from '@/components/DataTablePagination';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -28,35 +26,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import OrderTimeline from '@/components/OrderTimeline';
-import OrderFinancialSummary from '@/components/OrderFinancialSummary';
-import OrderShippingInfo from '@/components/OrderShippingInfo';
-import OrderCustomerInfo from '@/components/OrderCustomerInfo';
-import OrderItemsTable from '@/components/OrderItemsTable';
-
-const statusBadgeClass: Record<string, string> = {
-  open: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
-  paid: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
-  shipped: 'bg-orange-100 text-orange-800 hover:bg-orange-100 border-transparent',
-  closed: 'bg-cyan-100 text-cyan-800 hover:bg-cyan-100 border-transparent',
-  delivered: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
-  cancelled: '',
-  voided: 'bg-red-100 text-red-800 hover:bg-red-100 border-transparent',
-  pending: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
-};
-
-const paymentBadgeClass: Record<string, string> = {
-  paid: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
-  pending: 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent',
-  overdue: 'bg-red-100 text-red-800 hover:bg-red-100 border-transparent',
-  refunded: 'bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent',
-  partially_refunded: 'bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent',
-  partially_paid: 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent',
-  disputed: 'bg-red-100 text-red-800 hover:bg-red-100 border-transparent',
-  under_review: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
-};
-
-const orderStatuses = ['PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED'] as const;
+import { PageHeader } from '@/components/PageHeader';
+import { StatusBadge } from '@/components/StatusBadge';
+import { OrderDetailSheet, orderDisplayId } from '@/components/orders/OrderDetailSheet';
 
 const fulfillmentFilterOptions: { value: string; label: string }[] = [
   { value: 'pending', label: 'Pendente' },
@@ -67,15 +39,46 @@ const fulfillmentFilterOptions: { value: string; label: string }[] = [
   { value: 'cancelled', label: 'Cancelado' },
 ];
 
-function CostIncompleteBadge() {
+const COST_INCOMPLETE_HINT = 'Há itens sem cadastro no AuraSync: o custo e o lucro deste pedido estão incompletos';
+
+function OrderBadges({ order }: { order: Order }) {
   return (
-    <Badge
-      variant="outline"
-      className="border-amber-300 text-amber-800"
-      title="Há itens sem cadastro no AuraSync: o custo e o lucro deste pedido estão incompletos"
-    >
-      Custo incompleto
-    </Badge>
+    <div className="flex flex-wrap items-center gap-1">
+      <StatusBadge {...orderStatusBadge(order)} />
+      {order.cost_incomplete ? <StatusBadge tone="warning" label="Custo incompleto" title={COST_INCOMPLETE_HINT} /> : null}
+    </div>
+  );
+}
+
+interface RowActionsProps {
+  order: Order;
+  onUpdate: (status: string) => void;
+  onCancel: () => void;
+}
+
+function OrderRowActions({ order, onUpdate, onCancel }: RowActionsProps) {
+  const effective = orderStatusBadge(order);
+  const label = effective.label;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Ações do pedido ${orderDisplayId(order)}`}>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem disabled={label === 'Pago' || label === 'Entregue'} onClick={() => onUpdate('PAID')}>
+          Marcar como pago
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={label === 'Enviado' || label === 'Entregue'} onClick={() => onUpdate('SHIPPED')}>
+          Marcar como enviado
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive focus:text-destructive" disabled={effective.tone === 'danger'} onClick={onCancel}>
+          Cancelar pedido
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -111,15 +114,12 @@ export default function Orders() {
   }, [qc]));
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      ordersApi.update(id, { status }),
+    mutationFn: ({ id, status }: { id: string; status: string }) => ordersApi.update(id, { status }),
     onSuccess: () => {
       toast.success('Situação atualizada');
       qc.invalidateQueries({ queryKey: ['orders'] });
     },
-    onError: (err) => toast.error(
-      `Falha ao atualizar: ${getFriendlyError(err)}`
-    ),
+    onError: (err) => toast.error(`Falha ao atualizar: ${getFriendlyError(err)}`),
   });
 
   const deleteMutation = useMutation({
@@ -128,9 +128,7 @@ export default function Orders() {
       toast.success('Pedido cancelado');
       qc.invalidateQueries({ queryKey: ['orders'] });
     },
-    onError: (err) => toast.error(
-      `Falha ao cancelar: ${getFriendlyError(err)}`
-    ),
+    onError: (err) => toast.error(`Falha ao cancelar: ${getFriendlyError(err)}`),
   });
 
   const syncMutation = useMutation({
@@ -139,12 +137,10 @@ export default function Orders() {
       toast.success('Sincronização de pedidos iniciada em segundo plano. A lista será atualizada automaticamente.');
       qc.invalidateQueries({ queryKey: ['orders'] });
     },
-    onError: (err) => toast.error(
-      `Falha ao sincronizar: ${getFriendlyError(err)}`
-    ),
+    onError: (err) => toast.error(`Falha ao sincronizar: ${getFriendlyError(err)}`),
   });
 
-  function handleRowClick(order: Order) {
+  function openOrder(order: Order) {
     setSelectedSnapshot(order);
     setDetailSheetOpen(true);
   }
@@ -155,40 +151,44 @@ export default function Orders() {
   }
 
   function confirmCancel() {
-    if (cancellingId) {
-      deleteMutation.mutate(cancellingId);
-    }
+    if (cancellingId) deleteMutation.mutate(cancellingId);
     setCancelDialogOpen(false);
     setCancellingId(null);
   }
 
   const orders = data?.orders || [];
-  const selectedOrder = selectedSnapshot
-    ? orders.find((o) => o.id === selectedSnapshot.id) ?? selectedSnapshot
-    : null;
+  const selectedOrder = selectedSnapshot ? orders.find((o) => o.id === selectedSnapshot.id) ?? selectedSnapshot : null;
+  const canAct = (order: Order) => admin && isEditableLocally(order);
 
   return (
-    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
-      <div className="shrink-0">
-        <h1 className="text-2xl font-semibold">Pedidos</h1>
-        <p className="text-sm text-muted-foreground">Gerenciamento de pedidos</p>
-      </div>
+    <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
+      <PageHeader
+        title="Pedidos"
+        description="Pedidos da Nuvemshop e vendas registradas no AuraSync"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+            <RefreshCw className={`mr-1 h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+            Sincronizar com a Nuvemshop
+          </Button>
+        }
+      />
 
-      <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Pesquisar por cliente ou ID..."
+            aria-label="Pesquisar pedidos"
             className="pl-9"
             value={search}
-            onChange={(e) => { changeSearch(e.target.value); }}
+            onChange={(e) => changeSearch(e.target.value)}
           />
         </div>
         <Select
           value={fulfillmentFilter}
-          onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { fulfillment_status: value }); }}
+          onValueChange={(value) => changeFilter(value === 'all' ? undefined : { fulfillment_status: value })}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="sm:w-[200px]" aria-label="Filtrar por situação de envio">
             <SelectValue placeholder="Filtrar por situação" />
           </SelectTrigger>
           <SelectContent>
@@ -198,48 +198,68 @@ export default function Orders() {
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="shrink-0">
-          <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-          Sincronizar com a Nuvemshop
-        </Button>
       </div>
 
-      <div className="flex items-center justify-between shrink-0">
-        <p className="text-sm text-muted-foreground">
-          {data ? `${data.total} resultado${data.total !== 1 ? 's' : ''}` : ''}
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        {data ? `${data.total} resultado${data.total !== 1 ? 's' : ''}` : ''}
+      </p>
 
-      <div>
-        {isError ? (
-          <div className="flex items-center justify-center py-16">
-            <Alert variant="destructive" className="w-full max-w-lg">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Erro ao carregar pedidos</AlertTitle>
-              <AlertDescription>
-                <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
-                  Tentar novamente
-                </Button>
-              </AlertDescription>
-            </Alert>
-          </div>
-        ) : orders.length === 0 && !isLoading ? (
-          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <ShoppingCart className="h-12 w-12 mb-4" />
-            <p className="text-lg font-medium">Nenhum pedido encontrado</p>
-            <p className="text-sm mb-4">Tente ajustar os filtros.</p>
-          </div>
-        ) : (
-          <div className="[&>div]:overflow-visible">
+      {isError ? (
+        <div className="flex items-center justify-center py-16">
+          <Alert variant="destructive" className="w-full max-w-lg">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Erro ao carregar pedidos</AlertTitle>
+            <AlertDescription>
+              <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">Tentar novamente</Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      ) : orders.length === 0 && !isLoading ? (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+          <ShoppingCart className="mb-4 h-12 w-12" />
+          <p className="text-lg font-medium">Nenhum pedido encontrado</p>
+          <p className="mb-4 text-sm">Tente ajustar os filtros.</p>
+        </div>
+      ) : (
+        <>
+          {/* Phones: one card per order */}
+          <ul className="space-y-2 md:hidden" aria-label="Pedidos">
+            {isLoading
+              ? Array.from({ length: 5 }).map((_, i) => <li key={i}><Skeleton className="h-20 w-full rounded-lg" /></li>)
+              : orders.map((order) => (
+                <li key={order.id} className="flex items-start gap-2 rounded-lg border bg-card p-3">
+                  <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openOrder(order)}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="truncate font-medium">{order.customer_name || 'Cliente não informado'}</span>
+                      <span className="shrink-0 font-semibold tabular-nums">{formatCurrency(order.total_amount)}</span>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      <span className="font-mono">#{orderDisplayId(order)}</span> · {formatDate(order.created_at)}
+                    </div>
+                    <div className="mt-2"><OrderBadges order={order} /></div>
+                  </button>
+                  {canAct(order) ? (
+                    <OrderRowActions
+                      order={order}
+                      onUpdate={(status) => updateMutation.mutate({ id: order.id, status })}
+                      onCancel={() => handleCancelClick(order.id)}
+                    />
+                  ) : null}
+                </li>
+              ))}
+          </ul>
+
+          {/* Tablets and up: table */}
+          <div className="hidden md:block">
             <Table className="table-fixed">
               <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
-                  <TableHead className="w-[10%]">ID</TableHead>
+                  <TableHead className="w-[12%]">Pedido</TableHead>
                   <TableHead>Cliente</TableHead>
-                  <TableHead className="w-[16%]">Data</TableHead>
-                  <TableHead className="w-[18%]">Situação</TableHead>
-                  <TableHead className="w-[18%] text-right">Total</TableHead>
-                  <TableHead className="w-[9%] text-center">Ações</TableHead>
+                  <TableHead className="w-[14%]">Data</TableHead>
+                  <TableHead className="w-[24%]">Situação</TableHead>
+                  <TableHead className="w-[15%] text-right">Total</TableHead>
+                  <TableHead className="w-[8%] text-center"><span className="sr-only">Ações</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -250,259 +270,49 @@ export default function Orders() {
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-                      <TableCell><Skeleton className="h-8 w-8 mx-auto rounded" /></TableCell>
+                      <TableCell><Skeleton className="ml-auto h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="mx-auto h-8 w-8 rounded" /></TableCell>
                     </TableRow>
                   ))
                 ) : (
-                  orders.map((order) => {
-                    const effective = effectiveOrderStatus(order);
-                    return (
-                    <TableRow
-                      key={order.id}
-                      className="cursor-pointer"
-                      onClick={() => handleRowClick(order)}
-                    >
-                      <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}</TableCell>
-<TableCell className="font-medium">
-  <div className="truncate max-w-full">{order.customer_name}</div>
-</TableCell>
-                      <TableCell>{formatDate(order.created_at)}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap items-center gap-1">
-                          <Badge className={statusBadgeClass[effective.key] || ''} variant={effective.key === 'cancelled' ? 'destructive' : 'default'}>
-                            {effective.label}
-                          </Badge>
-                          {order.cost_incomplete ? <CostIncompleteBadge /> : null}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">{formatCurrency(order.total_amount)}</TableCell>
-                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                        {admin && isEditableLocally(order) ? (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                disabled={effective.key === 'paid' || effective.key === 'delivered'}
-                                onClick={() => updateMutation.mutate({ id: order.id, status: 'PAID' })}
-                              >
-                                Marcar como pago
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                disabled={effective.key === 'shipped' || effective.key === 'delivered'}
-                                onClick={() => updateMutation.mutate({ id: order.id, status: 'SHIPPED' })}
-                              >
-                                Marcar como enviado
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                disabled={effective.key === 'cancelled'}
-                                onClick={() => handleCancelClick(order.id)}
-                              >
-                                Cancelar pedido
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                  orders.map((order) => (
+                    <TableRow key={order.id} className="cursor-pointer" onClick={() => openOrder(order)}>
+                      <TableCell className="py-2.5 font-mono text-xs">#{orderDisplayId(order)}</TableCell>
+                      <TableCell className="py-2.5 font-medium"><div className="truncate">{order.customer_name}</div></TableCell>
+                      <TableCell className="py-2.5 tabular-nums">{formatDate(order.created_at)}</TableCell>
+                      <TableCell className="py-2.5"><OrderBadges order={order} /></TableCell>
+                      <TableCell className="py-2.5 text-right font-medium tabular-nums">{formatCurrency(order.total_amount)}</TableCell>
+                      <TableCell className="py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                        {canAct(order) ? (
+                          <OrderRowActions
+                            order={order}
+                            onUpdate={(status) => updateMutation.mutate({ id: order.id, status })}
+                            onCancel={() => handleCancelClick(order.id)}
+                          />
                         ) : null}
                       </TableCell>
                     </TableRow>
-                    );
-                  })
+                  ))
                 )}
               </TableBody>
             </Table>
           </div>
-        )}
-      </div>
-
-      {data && (
-        <DataTablePagination
-          page={data.page}
-          limit={data.limit}
-          total={data.total}
-          onPageChange={setPage}
-          onLimitChange={changeLimit}
-        />
+        </>
       )}
 
-      <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
-        <SheetContent side="right" className="w-[640px] sm:max-w-[640px] overflow-y-auto">
-          {selectedOrder ? (
-            <>
-              <SheetHeader>
-                <SheetTitle>Pedido #{selectedOrder.id.slice(0, 8)}</SheetTitle>
-                <SheetDescription>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {(() => {
-                      const effective = effectiveOrderStatus(selectedOrder);
-                      return (
-                        <Badge className={statusBadgeClass[effective.key] || ''} variant={effective.key === 'cancelled' ? 'destructive' : 'default'}>
-                          {effective.label}
-                        </Badge>
-                      );
-                    })()}
-                    {selectedOrder.commercial_status ? (
-                      <Badge variant="secondary">{selectedOrder.commercial_status}</Badge>
-                    ) : null}
-                    {selectedOrder.payment_status_label ? (
-                      <Badge className={paymentBadgeClass[selectedOrder.payment_status ?? ''] || ''}>{selectedOrder.payment_status_label}</Badge>
-                    ) : null}
-                    {selectedOrder.fulfillment_status_label ? (
-                      <Badge variant="outline">{selectedOrder.fulfillment_status_label}</Badge>
-                    ) : null}
-                    {selectedOrder.cost_incomplete ? <CostIncompleteBadge /> : null}
-                  </div>
-                </SheetDescription>
-              </SheetHeader>
+      {data && (
+        <DataTablePagination page={data.page} limit={data.limit} total={data.total} onPageChange={setPage} onLimitChange={changeLimit} />
+      )}
 
-              <div className="py-6 space-y-8">
-                {selectedOrder.cost_incomplete && selectedOrder.missing_items?.length ? (
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Custo incompleto</AlertTitle>
-                    <AlertDescription>
-                      {selectedOrder.missing_items.length === 1 ? 'Um item deste pedido não está' : `${selectedOrder.missing_items.length} itens deste pedido não estão`} cadastrados no AuraSync,
-                      por isso o custo e o lucro não os consideram. Sincronize os produtos com a Nuvemshop e depois os pedidos.
-                      <ul className="mt-2 list-disc pl-4">
-                        {selectedOrder.missing_items.map((item) => (
-                          <li key={item.nuvemshop_variant_id}>
-                            Variação {item.nuvemshop_variant_id} na Nuvemshop: {item.quantity} × {formatCurrency(item.unit_price)}
-                          </li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                ) : null}
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cliente</h3>
-                  <OrderCustomerInfo customer_name={selectedOrder.customer_name} customer_email={selectedOrder.customer_email} />
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Origem</h3>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="text-muted-foreground">Plataforma: </span>{sourceLabel(selectedOrder.source)}</p>
-                    {selectedOrder.storefront ? (
-                      <p><span className="text-muted-foreground">Canal de venda: </span>{storefrontLabel(selectedOrder.storefront)}</p>
-                    ) : null}
-                  </div>
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Itens</h3>
-                  <OrderItemsTable items={selectedOrder.items} />
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pagamento</h3>
-                  <div className="space-y-1 text-sm">
-                    <p>
-                      {selectedOrder.payment_method ? paymentMethodLabel(selectedOrder.payment_method) : '-'}
-                      {selectedOrder.payment_installments ? ` (${selectedOrder.payment_installments}x)` : ''}
-                    </p>
-                    {selectedOrder.gateway ? (
-                      <p className="text-muted-foreground">Intermediador: {gatewayLabel(selectedOrder.gateway)}</p>
-                    ) : null}
-                  </div>
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Frete</h3>
-                  <OrderShippingInfo
-                    shipping_cost_customer={selectedOrder.shipping_cost_customer}
-                    shipping_cost_owner={selectedOrder.shipping_cost_owner}
-                    shipping_carrier={selectedOrder.shipping_carrier}
-                    has_free_shipping={selectedOrder.has_free_shipping}
-                    shipping_city={selectedOrder.shipping_city}
-                    shipping_province={selectedOrder.shipping_province}
-                  />
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Endereço</h3>
-                  <p className="text-sm">
-                    {[selectedOrder.shipping_city, selectedOrder.shipping_province].filter(Boolean).join(' - ') || '-'}
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Rastreamento (UTM)</h3>
-                  {selectedOrder.utm_source || selectedOrder.utm_medium || selectedOrder.utm_campaign || selectedOrder.utm_content || selectedOrder.utm_term ? (
-                    <div className="space-y-1 text-sm">
-                      {selectedOrder.utm_source ? <p><span className="text-muted-foreground">Fonte: </span>{utmSourceLabel(selectedOrder.utm_source)}</p> : null}
-                      {selectedOrder.utm_medium ? <p><span className="text-muted-foreground">Mídia: </span>{utmMediumLabel(selectedOrder.utm_medium)}</p> : null}
-                      {selectedOrder.utm_campaign ? <p><span className="text-muted-foreground">Campanha: </span>{capitalizeWords(selectedOrder.utm_campaign)}</p> : null}
-                      {selectedOrder.utm_content ? <p><span className="text-muted-foreground">Conteúdo: </span>{capitalizeWords(selectedOrder.utm_content)}</p> : null}
-                      {selectedOrder.utm_term ? <p><span className="text-muted-foreground">Termo: </span>{capitalizeWords(selectedOrder.utm_term)}</p> : null}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Nenhuma UTM registrada</p>
-                  )}
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Financeiro</h3>
-                  <OrderFinancialSummary order={selectedOrder} />
-                </section>
-
-                <section>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Linha do tempo</h3>
-                  <OrderTimeline
-                    created_at={selectedOrder.created_at}
-                    paid_at={selectedOrder.paid_at}
-                    shipped_at={selectedOrder.shipped_at}
-                    completed_at={selectedOrder.completed_at}
-                    cancelled_at={selectedOrder.cancelled_at}
-                  />
-                </section>
-
-                {admin && !isEditableLocally(selectedOrder) ? (
-                  <p className="pt-4 border-t text-sm text-muted-foreground">
-                    Pedido da Nuvemshop: a situação é alterada na própria Nuvemshop e chega aqui pela sincronização.
-                  </p>
-                ) : null}
-
-                {admin && isEditableLocally(selectedOrder) ? (
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Select
-                      value={selectedOrder.status}
-                      disabled={updateMutation.isPending}
-                      onValueChange={(value) => {
-                        // Cancelling always goes through the confirmation (it returns the stock).
-                        if (value === 'CANCELED') handleCancelClick(selectedOrder.id);
-                        else updateMutation.mutate({ id: selectedOrder.id, status: value });
-                      }}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {orderStatuses.map((s) => (
-                          <SelectItem key={s} value={s} disabled={s === selectedOrder.status}>
-                            {statusLabel(s)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="destructive"
-                      disabled={effectiveOrderStatus(selectedOrder).key === 'cancelled'}
-                      onClick={() => handleCancelClick(selectedOrder.id)}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                ) : null}
-              </div>
-            </>
-          ) : null}
-        </SheetContent>
-      </Sheet>
+      <OrderDetailSheet
+        order={selectedOrder}
+        open={detailSheetOpen}
+        onOpenChange={setDetailSheetOpen}
+        canManage={admin}
+        updating={updateMutation.isPending}
+        onChangeStatus={(status) => selectedOrder && updateMutation.mutate({ id: selectedOrder.id, status })}
+        onCancel={() => selectedOrder && handleCancelClick(selectedOrder.id)}
+      />
 
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
@@ -523,4 +333,3 @@ export default function Orders() {
     </div>
   );
 }
-

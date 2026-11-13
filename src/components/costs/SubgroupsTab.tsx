@@ -160,7 +160,7 @@ export default function SubgroupsTab() {
                     ) : null}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={subgroup.is_active ? 'default' : 'secondary'} className={subgroup.is_active ? 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent' : ''}>
+                    <Badge variant={subgroup.is_active ? 'default' : 'secondary'} className={subgroup.is_active ? 'bg-success-soft text-success-soft-foreground hover:bg-success-soft border-transparent' : ''}>
                       {subgroup.is_active ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </TableCell>

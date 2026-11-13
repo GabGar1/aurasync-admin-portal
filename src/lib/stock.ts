@@ -4,6 +4,14 @@ export function totalStock(variants: Array<{ stock_quantity: number }> | null | 
   return variants?.reduce((sum, v) => sum + v.stock_quantity, 0) ?? 0;
 }
 
+/** Secondary line of a product row: its SKU when there is one variant, otherwise how many. */
+export function variantSummary(variants: Array<{ sku?: string | null }> | null | undefined): string {
+  const count = variants?.length ?? 0;
+  if (count === 0) return 'Sem variações';
+  if (count === 1) return variants![0]!.sku ? `SKU ${variants![0]!.sku}` : '1 variação';
+  return `${count} variações`;
+}
+
 export type StockLevel = 'ok' | 'low' | 'restock' | 'oversold';
 
 /** Negative stock means Nuvemshop sold more than AuraSync had registered. */

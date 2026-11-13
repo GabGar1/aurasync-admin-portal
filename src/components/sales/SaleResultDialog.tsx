@@ -16,7 +16,7 @@ export default function SaleResultDialog({ open, onOpenChange, sale }: Props) {
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BadgeCheck className="h-5 w-5 text-green-600" />
+            <BadgeCheck className="h-5 w-5 text-success" />
             Venda registrada
           </DialogTitle>
         </DialogHeader>
@@ -47,7 +47,7 @@ export default function SaleResultDialog({ open, onOpenChange, sale }: Props) {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Lucro total</span>
-                <span className="font-semibold text-green-700">{formatCurrency(sale.total_profit)}</span>
+                <span className="font-semibold text-success">{formatCurrency(sale.total_profit)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Margem</span>

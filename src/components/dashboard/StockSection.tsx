@@ -21,7 +21,7 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
           <CardContent>
             {isLoading ? <Skeleton className="h-[200px]" /> : !data?.low_stock?.length ? (
               <div className="flex items-center justify-center py-8">
-                <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">Todos os estoques saudáveis</Badge>
+                <Badge variant="default" className="bg-success-soft text-success-soft-foreground hover:bg-success-soft">Todos os estoques saudáveis</Badge>
               </div>
             ) : (
               <div className="max-h-[300px] overflow-y-auto">
@@ -108,7 +108,7 @@ export default function StockSection({ data, isLoading }: StockSectionProps) {
                         <TableCell className="text-right">{item.sales_qty_30d}</TableCell>
                         <TableCell className="text-right">{item.avg_stock.toFixed(1)}</TableCell>
                         <TableCell className="text-right">
-                          <Badge variant={item.turnover > 3 ? 'default' : 'secondary'} className={item.turnover < 1 ? 'bg-amber-100 text-amber-800' : ''}>
+                          <Badge variant={item.turnover > 3 ? 'default' : 'secondary'} className={item.turnover < 1 ? 'bg-warning-soft text-warning-soft-foreground hover:bg-warning-soft' : ''}>
                             {item.turnover.toFixed(2)}
                           </Badge>
                         </TableCell>

@@ -124,7 +124,7 @@ export default function CreditFeeTab() {
                   <TableCell>{Number(tier.percent).toFixed(2)}%</TableCell>
                   <TableCell>{formatCurrency(Number(tier.fixed_fee))}</TableCell>
                   <TableCell>
-                    <Badge variant={tier.is_active ? 'default' : 'secondary'} className={tier.is_active ? 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent' : ''}>
+                    <Badge variant={tier.is_active ? 'default' : 'secondary'} className={tier.is_active ? 'bg-success-soft text-success-soft-foreground hover:bg-success-soft border-transparent' : ''}>
                       {tier.is_active ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </TableCell>

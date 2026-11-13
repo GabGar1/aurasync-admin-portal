@@ -5,24 +5,20 @@ import { inventoryApi, getFriendlyError } from '@/services/api';
 import type { CreateInventoryPayload, GetInventoryResponse } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { can } from '@/lib/permissions';
-import { formatDate, inventoryTypeLabel } from '@/lib/formatters';
+import { formatDate } from '@/lib/formatters';
+import { inventoryTypeBadge } from '@/lib/status';
+import { PageHeader } from '@/components/PageHeader';
+import { StatusBadge } from '@/components/StatusBadge';
 import { toast } from 'sonner';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const typeBadgeClass: Record<string, string> = {
-  SALE: 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent',
-  RESTOCK: 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent',
-  ADJUSTMENT: 'bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent',
-};
 
 export default function Inventory() {
   const { user } = useAuth();
@@ -55,21 +51,17 @@ export default function Inventory() {
   const transactions = data?.transactions || [];
 
   return (
-    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
-      <div className="shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Inventário</h1>
-            <p className="text-sm text-muted-foreground">Histórico de movimentações de estoque</p>
-          </div>
-          {admin && (
-            <Button onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Ajustar estoque
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
+      <PageHeader
+        title="Inventário"
+        description="Cada entrada e saída de estoque: vendas, cancelamentos e ajustes manuais"
+        actions={admin ? (
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="mr-1 h-4 w-4" />
+            Ajustar estoque
+          </Button>
+        ) : null}
+      />
 
       {isError ? (
         <div className="flex items-center justify-center py-16">
@@ -91,8 +83,9 @@ export default function Inventory() {
         </div>
       ) : (
         <>
-          <Table>
-            <TableHeader className="sticky top-0 z-10 bg-background">
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <Table className="min-w-[560px]">
+            <TableHeader className="bg-background">
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>ID da variação</TableHead>
@@ -115,22 +108,19 @@ export default function Inventory() {
               ) : (
                 transactions.map((t) => (
                   <TableRow key={t.id}>
-                    <TableCell>{formatDate(t.created_at)}</TableCell>
-                    <TableCell className="font-mono text-xs">{t.variant_id}</TableCell>
-                    <TableCell>
-                      <Badge className={typeBadgeClass[t.type]} variant="secondary">
-                        {inventoryTypeLabel(t.type)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className={`text-right font-semibold ${t.quantity_changed < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <TableCell className="tabular-nums">{formatDate(t.created_at)}</TableCell>
+                    <TableCell className="font-mono text-xs"><span className="block truncate">{t.variant_id}</span></TableCell>
+                    <TableCell><StatusBadge {...inventoryTypeBadge(t.type)} /></TableCell>
+                    <TableCell className={`text-right font-semibold tabular-nums ${t.quantity_changed < 0 ? 'text-destructive' : 'text-success'}`}>
                       {t.quantity_changed > 0 ? `+${t.quantity_changed}` : t.quantity_changed}
                     </TableCell>
-                    <TableCell>{t.order_id || '-'}</TableCell>
+                    <TableCell className="font-mono text-xs"><span className="block truncate">{t.order_id ? t.order_id.slice(0, 8) : '-'}</span></TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
+          </div>
 
           {totalPages > 1 ? (
             <div className="flex items-center justify-center gap-1">

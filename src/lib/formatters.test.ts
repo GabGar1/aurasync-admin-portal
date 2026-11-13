@@ -3,8 +3,22 @@ import {
   typeLabel, categoryLabel, calculationBaseLabel, storefrontLabel,
   sourceLabel, paymentMethodLabel, statusLabel, preferLabel, marginPercent,
   roleLabel, utmSourceLabel, utmMediumLabel, capitalizeWords, effectiveOrderStatus, gatewayLabel,
-  allocationBasisLabel, formatDateOnly, inventoryTypeLabel,
+  allocationBasisLabel, formatDateOnly, inventoryTypeLabel, provinceCode,
 } from './formatters';
+
+describe('provinceCode', () => {
+  it('abrevia o nome do estado para a sigla, sem depender de acento ou caixa', () => {
+    expect(provinceCode('São Paulo')).toBe('SP');
+    expect(provinceCode('rio grande do sul')).toBe('RS');
+    expect(provinceCode('Distrito Federal')).toBe('DF');
+    expect(provinceCode('SP')).toBe('SP');
+  });
+
+  it('mantém o texto original quando não reconhece e trata vazio', () => {
+    expect(provinceCode('Buenos Aires')).toBe('Buenos Aires');
+    expect(provinceCode(null)).toBe('-');
+  });
+});
 
 describe('glossário PT-BR', () => {
   it('traduz tipos de componente de custo', () => {

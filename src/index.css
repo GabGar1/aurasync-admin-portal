@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens (HSL channels). Identity: amethyst/lilac primary over a cream background.
+ * --primary is dark enough for white text (≈5.5:1, WCAG AA); --primary-soft keeps the
+ * original lighter lilac for highlights. Semantic colors (success/warning/info/destructive)
+ * are only used for meaning; categorical charts use --chart-1..6 (lilac family).
+ */
 @layer base {
   :root {
     --background: 40 33% 97%;
@@ -10,31 +16,110 @@
     --card-foreground: 240 10% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 10%;
-    --primary: 270 50% 60%;
+    --primary: 270 50% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 33% 97%;
+    --primary-soft: 270 50% 60%;
+    --secondary: 40 25% 93%;
     --secondary-foreground: 240 10% 20%;
     --muted: 240 5% 92%;
-    --muted-foreground: 240 5% 46%;
+    --muted-foreground: 240 5% 42%;
     --accent: 270 50% 95%;
     --accent-foreground: 270 50% 30%;
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
+    --destructive-soft: 0 86% 96%;
+    --destructive-soft-foreground: 0 70% 35%;
+    --success: 152 60% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-soft: 145 60% 94%;
+    --success-soft-foreground: 152 65% 24%;
+    --warning: 35 92% 45%;
+    --warning-foreground: 0 0% 100%;
+    --warning-soft: 45 95% 92%;
+    --warning-soft-foreground: 30 80% 28%;
+    --info: 215 70% 50%;
+    --info-foreground: 0 0% 100%;
+    --info-soft: 214 90% 95%;
+    --info-soft-foreground: 220 65% 35%;
+    --neutral-soft: 240 6% 93%;
+    --neutral-soft-foreground: 240 5% 30%;
     --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 270 50% 60%;
+    --input: 240 6% 88%;
+    --ring: 270 50% 50%;
     --radius: 0.875rem;
+    --chart-1: 270 50% 50%;
+    --chart-2: 285 45% 65%;
+    --chart-3: 255 40% 40%;
+    --chart-4: 300 35% 75%;
+    --chart-5: 240 30% 60%;
+    --chart-6: 270 25% 82%;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 240 5% 26%;
-    --sidebar-primary: 270 50% 60%;
+    --sidebar-primary: 270 50% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 270 50% 95%;
     --sidebar-accent-foreground: 270 50% 30%;
     --sidebar-border: 240 6% 90%;
-    --sidebar-ring: 270 50% 60%;
+    --sidebar-ring: 270 50% 50%;
     --shadow-soft: 0 2px 16px hsl(270 50% 60% / 0.06);
     --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.04);
     --shadow-elevated: 0 8px 32px hsl(0 0% 0% / 0.08);
+  }
+
+  .dark {
+    --background: 255 18% 8%;
+    --foreground: 40 20% 94%;
+    --card: 255 16% 11%;
+    --card-foreground: 40 20% 94%;
+    --popover: 255 16% 12%;
+    --popover-foreground: 40 20% 94%;
+    --primary: 270 60% 68%;
+    --primary-foreground: 260 30% 10%;
+    --primary-soft: 270 45% 55%;
+    --secondary: 255 12% 17%;
+    --secondary-foreground: 40 20% 90%;
+    --muted: 255 12% 17%;
+    --muted-foreground: 250 8% 66%;
+    --accent: 270 30% 20%;
+    --accent-foreground: 270 70% 88%;
+    --destructive: 0 70% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-soft: 0 45% 18%;
+    --destructive-soft-foreground: 0 85% 80%;
+    --success: 152 50% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-soft: 152 35% 16%;
+    --success-soft-foreground: 145 60% 75%;
+    --warning: 38 90% 55%;
+    --warning-foreground: 30 60% 10%;
+    --warning-soft: 35 45% 16%;
+    --warning-soft-foreground: 42 95% 72%;
+    --info: 215 75% 62%;
+    --info-foreground: 220 50% 10%;
+    --info-soft: 218 40% 18%;
+    --info-soft-foreground: 213 90% 80%;
+    --neutral-soft: 255 10% 20%;
+    --neutral-soft-foreground: 250 10% 80%;
+    --border: 255 12% 20%;
+    --input: 255 12% 22%;
+    --ring: 270 60% 68%;
+    --chart-1: 270 60% 68%;
+    --chart-2: 290 45% 72%;
+    --chart-3: 255 45% 58%;
+    --chart-4: 305 35% 80%;
+    --chart-5: 240 35% 70%;
+    --chart-6: 270 20% 45%;
+    --sidebar-background: 255 18% 10%;
+    --sidebar-foreground: 40 15% 85%;
+    --sidebar-primary: 270 60% 68%;
+    --sidebar-primary-foreground: 260 30% 10%;
+    --sidebar-accent: 270 30% 18%;
+    --sidebar-accent-foreground: 270 70% 88%;
+    --sidebar-border: 255 12% 18%;
+    --sidebar-ring: 270 60% 68%;
+    --shadow-soft: 0 2px 16px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.35);
+    --shadow-elevated: 0 8px 32px hsl(0 0% 0% / 0.5);
   }
 }
 
@@ -47,8 +132,9 @@
     overflow: hidden;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
   }
 }
 

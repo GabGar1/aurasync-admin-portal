@@ -6,14 +6,16 @@ import { useTableFilters } from "@/hooks/useTableFilters";
 import { useAuth } from "@/hooks/useAuth";
 import { can } from "@/lib/permissions";
 import { formatCurrency } from "@/lib/formatters";
-import { totalStock, sortProductsByStock, stockLevel } from "@/lib/stock";
+import { totalStock, sortProductsByStock, stockLevel, variantSummary } from "@/lib/stock";
+import { activeBadge } from "@/lib/status";
+import { PageHeader } from "@/components/PageHeader";
+import { StatusBadge } from "@/components/StatusBadge";
 import { toast } from "sonner";
 import type { ProductVariant } from "@/types";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -21,38 +23,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import DataTablePagination from "@/components/DataTablePagination";
 import { Package, Search, ChevronDown, ChevronUp, RefreshCw, AlertTriangle } from "lucide-react";
 
+const stockStyle = {
+  ok: { text: 'text-success', dot: 'bg-success', badge: null },
+  low: { text: 'text-warning', dot: 'bg-warning', badge: null },
+  restock: { text: 'text-destructive', dot: 'bg-destructive', badge: { tone: 'danger' as const, label: 'Repor' } },
+  oversold: {
+    text: 'text-destructive',
+    dot: 'bg-destructive',
+    badge: { tone: 'danger' as const, label: 'Vendido além do estoque' },
+  },
+};
+
 function StockIndicator({ quantity }: { quantity: number }) {
-  const level = stockLevel(quantity);
-  if (level === 'oversold') {
-    return (
-      <span className="text-red-600 font-semibold flex items-center gap-1" title="A Nuvemshop vendeu mais unidades do que o estoque registrado no AuraSync">
-        <span className="h-2 w-2 rounded-full bg-red-600" />
-        {quantity}
-        <Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1.5">Vendido além do estoque</Badge>
-      </span>
-    );
-  }
-  if (level === 'ok') {
-    return (
-      <span className="text-green-600 font-medium flex items-center gap-1">
-        <span className="h-2 w-2 rounded-full bg-green-600" />
-        {quantity}
-      </span>
-    );
-  }
-  if (level === 'low') {
-    return (
-      <span className="text-amber-600 font-medium flex items-center gap-1">
-        <span className="h-2 w-2 rounded-full bg-amber-600" />
-        {quantity}
-      </span>
-    );
-  }
+  const style = stockStyle[stockLevel(quantity)];
   return (
-    <span className="text-red-600 font-semibold flex items-center gap-1">
-      <span className="h-2 w-2 rounded-full bg-red-600" />
+    <span
+      className={`flex flex-wrap items-center gap-1.5 font-medium tabular-nums ${style.text}`}
+      title={quantity < 0 ? 'A Nuvemshop vendeu mais unidades do que o estoque registrado no AuraSync' : undefined}
+    >
+      <span aria-hidden className={`h-2 w-2 rounded-full ${style.dot}`} />
       {quantity}
-      <Badge variant="destructive" className="ml-1 text-[10px] h-5 px-1.5">Repor</Badge>
+      {style.badge ? <StatusBadge {...style.badge} /> : null}
     </span>
   );
 }
@@ -152,17 +143,24 @@ export default function Products() {
   const hasFilters = debouncedSearch || category !== "all";
 
   return (
-    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
-      <div className="shrink-0">
-        <h1 className="text-2xl font-semibold">Produtos</h1>
-        <p className="text-sm text-muted-foreground">Catálogo de produtos, variações e estoque</p>
-      </div>
+    <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
+      <PageHeader
+        title="Produtos"
+        description="Catálogo, variações e estoque (o estoque é controlado pelo AuraSync)"
+        actions={canSync ? (
+          <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+            <RefreshCw className={`mr-1 h-4 w-4 ${syncMutation.isPending ? "animate-spin" : ""}`} />
+            Sincronizar com a Nuvemshop
+          </Button>
+        ) : null}
+      />
 
-      <div className="flex flex-col sm:flex-row gap-4 shrink-0">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Pesquisar por nome, SKU ou código..."
+            aria-label="Pesquisar produtos"
             className="pl-9"
             value={search}
             onChange={(e) => { changeSearch(e.target.value); }}
@@ -172,7 +170,7 @@ export default function Products() {
           value={category}
           onValueChange={(value) => { changeFilter(value === 'all' ? undefined : { category: value }); }}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="sm:w-[210px]" aria-label="Filtrar por categoria">
             <SelectValue placeholder="Filtrar por categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -182,12 +180,6 @@ export default function Products() {
             ))}
           </SelectContent>
         </Select>
-        {canSync ? (
-          <Button variant="outline" size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="shrink-0">
-            <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
-            Sincronizar com a Nuvemshop
-          </Button>
-        ) : null}
       </div>
 
       <div className="flex items-center justify-between shrink-0">
@@ -218,15 +210,16 @@ export default function Products() {
             </p>
           </div>
         ) : (
-          <div className="[&>div]:overflow-visible">
-            <Table className="table-fixed">
-              <TableHeader className="sticky top-0 z-10 bg-background">
+          // On phones the table scrolls sideways instead of overlapping columns.
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <Table className="min-w-[640px] table-fixed">
+              <TableHeader className="bg-background">
                 <TableRow>
-                  <TableHead className="w-[3%] min-w-[2rem]" />
+                  <TableHead className="w-10"><span className="sr-only">Expandir variações</span></TableHead>
                   <TableHead>Produto</TableHead>
                   <TableHead className="w-[18%]">Categoria</TableHead>
                   <TableHead className="w-[13%]">Situação</TableHead>
-                  <TableHead className="w-[11%]">
+                  <TableHead className="w-[17%]">
                     <button
                       type="button"
                       className="flex items-center gap-1 hover:text-foreground"
@@ -274,21 +267,19 @@ export default function Products() {
                           }`}
                         />
                       </TableCell>
-                      <TableCell>
-                        <div className="truncate font-semibold">{product.name}</div>
-                        <div className="truncate text-xs text-muted-foreground">{product.slug}</div>
+                      <TableCell className="py-2.5">
+                        <div className="truncate font-medium">{product.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {variantSummary(product.variants)}
+                        </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-100 border-transparent">
-                          {product.category || "Geral"}
-                        </Badge>
+                      <TableCell className="py-2.5">
+                        <span className="truncate text-sm text-muted-foreground">{product.category || "Geral"}</span>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={product.is_active ? "default" : "secondary"}>
-                          {product.is_active ? "Ativo" : "Inativo"}
-                        </Badge>
+                      <TableCell className="py-2.5">
+                        <StatusBadge {...activeBadge(product.is_active)} dot />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2.5">
                         <StockIndicator quantity={totalStock(product.variants)} />
                       </TableCell>
                     </TableRow>
@@ -316,20 +307,14 @@ export default function Products() {
                                       <td className="p-4 align-middle">
                                         <div className="flex items-center gap-1">
                                           {variant.sku ? (
-                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                              {variant.sku}
-                                            </Badge>
+                                            <span className="truncate font-mono text-xs">{variant.sku}</span>
                                           ) : (
                                             <span className="text-muted-foreground">-</span>
                                           )}
-                                          {variant.has_promotional_price ? (
-                                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
-                                              Promoção
-                                            </Badge>
-                                          ) : null}
+                                          {variant.has_promotional_price ? <StatusBadge tone="warning" label="Promoção" /> : null}
                                         </div>
                                       </td>
-                                      <td className="p-4 align-middle">{formatCurrency(variant.price)}</td>
+                                      <td className="p-4 align-middle tabular-nums">{formatCurrency(variant.price)}</td>
                                       <td className="p-4 align-middle">
                                         <StockIndicator quantity={variant.stock_quantity} />
                                       </td>

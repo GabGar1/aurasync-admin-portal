@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '@/components/PageHeader';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -127,11 +128,8 @@ export default function Sales() {
   }
 
   return (
-    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
-      <div className="shrink-0">
-        <h1 className="text-2xl font-semibold">Venda externa</h1>
-        <p className="text-sm text-muted-foreground">Registre vendas feitas fora da loja online</p>
-      </div>
+    <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
+      <PageHeader title="Venda externa" description="Registre vendas feitas fora da loja online, como em feiras e no WhatsApp" />
 
       <form onSubmit={form.handleSubmit((values) => createMutation.mutate(values))} className="w-full max-w-6xl space-y-6">
         <div className="space-y-4 border-input rounded-lg p-4">

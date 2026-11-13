@@ -1,4 +1,5 @@
 import { useDashboard } from '@/hooks/useDashboard';
+import { PageHeader } from '@/components/PageHeader';
 import DateRangePicker from '@/components/DateRangePicker';
 import KpiCards from '@/components/dashboard/KpiCards';
 import RevenueChart from '@/components/dashboard/RevenueChart';
@@ -20,11 +21,12 @@ export default function Dashboard() {
   const hasError = [orders, marketing, stock, userStats].some((q) => q.isError);
 
   return (
-    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
-      <div className="flex flex-wrap items-center justify-between gap-4 shrink-0">
-        <h1 className="text-2xl font-semibold">Painel</h1>
-        <DateRangePicker range={range} onRangeChange={setRange} />
-      </div>
+    <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
+      <PageHeader
+        title="Painel"
+        description="Vendas, marketing e estoque do período"
+        actions={<DateRangePicker range={range} onRangeChange={setRange} />}
+      />
 
       {hasError ? (
         <Alert variant="destructive">

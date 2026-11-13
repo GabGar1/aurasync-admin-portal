@@ -118,7 +118,7 @@ export default function MarketingSection({ data, isLoading }: MarketingSectionPr
                         <TableCell>{utmCampaignLabel(camp)}</TableCell>
                         <TableCell className="text-right">{camp.orders}</TableCell>
                         <TableCell className="text-right">{formatCurrency(camp.revenue)}</TableCell>
-                        <TableCell className={`text-right font-medium ${camp.aov > overallAOV ? 'text-green-600' : ''}`}>{formatCurrency(camp.aov)}</TableCell>
+                        <TableCell className={`text-right font-medium ${camp.aov > overallAOV ? 'text-success' : ''}`}>{formatCurrency(camp.aov)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

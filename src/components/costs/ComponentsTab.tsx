@@ -189,7 +189,7 @@ export default function ComponentsTab() {
                     {component.type === 'PERCENT' ? calculationBaseLabel(component.calculation_base) : '-'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={component.is_active ? 'default' : 'secondary'} className={component.is_active ? 'bg-green-100 text-green-800 hover:bg-green-100 border-transparent' : ''}>
+                    <Badge variant={component.is_active ? 'default' : 'secondary'} className={component.is_active ? 'bg-success-soft text-success-soft-foreground hover:bg-success-soft border-transparent' : ''}>
                       {component.is_active ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </TableCell>

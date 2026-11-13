@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { totalStock, sortProductsByStock, stockLevel } from './stock';
+import { totalStock, sortProductsByStock, stockLevel, variantSummary } from './stock';
 import type { Product, ProductVariant } from '@/types';
 
 const vars = (qs: (number | null)[]): ProductVariant[] =>
@@ -13,6 +13,15 @@ describe('totalStock', () => {
     expect(totalStock([])).toBe(0);
     expect(totalStock(null)).toBe(0);
     expect(totalStock(undefined)).toBe(0);
+  });
+});
+
+describe('variantSummary', () => {
+  it('resume as variações em vez de repetir o slug', () => {
+    expect(variantSummary([{ sku: 'COL-1' } as ProductVariant])).toBe('SKU COL-1');
+    expect(variantSummary([{ sku: null } as unknown as ProductVariant])).toBe('1 variação');
+    expect(variantSummary(vars([1, 2, 3]))).toBe('3 variações');
+    expect(variantSummary(null)).toBe('Sem variações');
   });
 });
 

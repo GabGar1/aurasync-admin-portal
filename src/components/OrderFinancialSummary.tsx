@@ -17,7 +17,7 @@ export default function OrderFinancialSummary({ order }: Props) {
         <span className="font-semibold">{formatCurrency(order.total_amount)}</span>
       </div>
       {order.discount_amount && order.discount_amount > 0 ? (
-        <div className="flex justify-between text-red-500">
+        <div className="flex justify-between text-destructive">
           <span>Desconto</span>
           <span>-{formatCurrency(order.discount_amount)}</span>
         </div>
@@ -56,7 +56,7 @@ export default function OrderFinancialSummary({ order }: Props) {
       </div>
       <div className="flex justify-between">
         <span className="text-muted-foreground">Lucro total</span>
-        <span className="font-semibold text-green-700">
+        <span className="font-semibold text-success">
           {order.total_profit === null || order.total_profit === undefined ? '-' : formatCurrency(order.total_profit)}
         </span>
       </div>

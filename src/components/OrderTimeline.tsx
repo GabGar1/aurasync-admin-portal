@@ -14,9 +14,9 @@ export default function OrderTimeline({ created_at, paid_at, shipped_at, complet
     return (
       <div className="space-y-3">
         {created_at ? (
-          <TimelineStep icon={CheckCircle2} color="text-blue-500" label="Criado" time={formatTime(created_at)} />
+          <TimelineStep icon={CheckCircle2} color="text-info" label="Criado" time={formatTime(created_at)} />
         ) : null}
-        <TimelineStep icon={XCircle} color="text-red-500" label="Cancelado" time={formatTime(cancelled_at)} />
+        <TimelineStep icon={XCircle} color="text-destructive" label="Cancelado" time={formatTime(cancelled_at)} />
       </div>
     );
   }
@@ -24,11 +24,11 @@ export default function OrderTimeline({ created_at, paid_at, shipped_at, complet
   return (
     <div className="space-y-3">
       {created_at ? (
-        <TimelineStep icon={CheckCircle2} color="text-blue-500" label="Criado" time={formatTime(created_at)} />
+        <TimelineStep icon={CheckCircle2} color="text-info" label="Criado" time={formatTime(created_at)} />
       ) : null}
-      <TimelineStep icon={CheckCircle2} color={paid_at ? "text-green-500" : "text-gray-300"} label="Pago" time={paid_at ? formatTime(paid_at) : "Pendente"} />
-      <TimelineStep icon={CheckCircle2} color={shipped_at ? "text-green-500" : "text-gray-300"} label="Enviado" time={shipped_at ? formatTime(shipped_at) : "Pendente"} />
-      <TimelineStep icon={CheckCircle2} color={completed_at ? "text-green-500" : "text-gray-300"} label="Entregue" time={completed_at ? formatTime(completed_at) : "Pendente"} />
+      <TimelineStep icon={CheckCircle2} color={paid_at ? "text-success" : "text-muted-foreground/40"} label="Pago" time={paid_at ? formatTime(paid_at) : "Pendente"} />
+      <TimelineStep icon={CheckCircle2} color={shipped_at ? "text-success" : "text-muted-foreground/40"} label="Enviado" time={shipped_at ? formatTime(shipped_at) : "Pendente"} />
+      <TimelineStep icon={CheckCircle2} color={completed_at ? "text-success" : "text-muted-foreground/40"} label="Entregue" time={completed_at ? formatTime(completed_at) : "Pendente"} />
     </div>
   );
 }

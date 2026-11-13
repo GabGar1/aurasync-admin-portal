@@ -3,16 +3,14 @@ import ComponentsTab from '@/components/costs/ComponentsTab';
 import SubgroupsTab from '@/components/costs/SubgroupsTab';
 import CreditFeeTab from '@/components/costs/CreditFeeTab';
 import CostClosingTab from '@/components/costs/CostClosingTab';
+import { PageHeader } from '@/components/PageHeader';
 
 export default function Costs() {
   return (
-    <div className="flex flex-col p-6 space-y-6 motion-safe:animate-fade-in-up">
-      <div className="shrink-0">
-        <h1 className="text-2xl font-semibold">Custos</h1>
-        <p className="text-sm text-muted-foreground">Componentes, subgrupos e apuração mensal de custos</p>
-      </div>
+    <div className="flex flex-col space-y-6 p-4 motion-safe:animate-fade-in-up sm:p-6">
+      <PageHeader title="Custos" description="Componentes, subgrupos e apuração mensal de custos" />
       <Tabs defaultValue="components" className="w-full">
-        <TabsList>
+        <TabsList className="h-auto w-full flex-wrap justify-start sm:w-auto">
           <TabsTrigger value="components">Componentes</TabsTrigger>
           <TabsTrigger value="subgroups">Subgrupos</TabsTrigger>
           <TabsTrigger value="credit-fee">Taxa de crédito</TabsTrigger>

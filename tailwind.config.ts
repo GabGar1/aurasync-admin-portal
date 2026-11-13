@@ -23,6 +23,37 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          soft: "hsl(var(--primary-soft))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+          soft: "hsl(var(--success-soft))",
+          "soft-foreground": "hsl(var(--success-soft-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+          soft: "hsl(var(--warning-soft))",
+          "soft-foreground": "hsl(var(--warning-soft-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+          soft: "hsl(var(--info-soft))",
+          "soft-foreground": "hsl(var(--info-soft-foreground))",
+        },
+        neutral: {
+          soft: "hsl(var(--neutral-soft))",
+          "soft-foreground": "hsl(var(--neutral-soft-foreground))",
+        },
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))",
+          4: "hsl(var(--chart-4))",
+          5: "hsl(var(--chart-5))",
+          6: "hsl(var(--chart-6))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -31,6 +62,8 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+          soft: "hsl(var(--destructive-soft))",
+          "soft-foreground": "hsl(var(--destructive-soft-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",

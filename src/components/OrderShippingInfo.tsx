@@ -50,8 +50,8 @@ export default function OrderShippingInfo({
       ) : null}
       {has_free_shipping ? (
         <div className="flex items-center gap-1.5 pt-1">
-          <Truck className="h-4 w-4 text-green-600" />
-          <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 border-transparent">
+          <Truck className="h-4 w-4 text-success" />
+          <Badge variant="secondary" className="bg-success-soft text-success-soft-foreground hover:bg-success-soft border-transparent">
             Frete Grátis
           </Badge>
         </div>

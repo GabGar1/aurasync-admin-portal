@@ -224,6 +224,23 @@ export function utmMediumLabel(value: string | null | undefined): string {
   return utmMediumLabels[value] ?? capitalizeWords(value);
 }
 
+const provinceCodes: Record<string, string> = {
+  acre: 'AC', alagoas: 'AL', amapa: 'AP', amazonas: 'AM', bahia: 'BA', ceara: 'CE', 'distrito federal': 'DF',
+  'espirito santo': 'ES', goias: 'GO', maranhao: 'MA', 'mato grosso': 'MT', 'mato grosso do sul': 'MS',
+  'minas gerais': 'MG', para: 'PA', paraiba: 'PB', parana: 'PR', pernambuco: 'PE', piaui: 'PI',
+  'rio de janeiro': 'RJ', 'rio grande do norte': 'RN', 'rio grande do sul': 'RS', rondonia: 'RO', roraima: 'RR',
+  'santa catarina': 'SC', 'sao paulo': 'SP', sergipe: 'SE', tocantins: 'TO',
+};
+
+/** Brazilian state name (as Nuvemshop sends it) to its two-letter code. */
+export function provinceCode(province: string | null | undefined): string {
+  if (!province) return '-';
+  const trimmed = province.trim();
+  if (/^[A-Za-z]{2}$/.test(trimmed)) return trimmed.toUpperCase();
+  const key = trimmed.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return provinceCodes[key] ?? trimmed;
+}
+
 export interface OrderStatusLike {
   status: string;
   paid_at?: string | null;
