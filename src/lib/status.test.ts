@@ -35,9 +35,9 @@ describe('outros selos', () => {
   });
 
   it('situação do pagamento', () => {
-    expect(paymentStatusBadge('paid').tone).toBe('success');
-    expect(paymentStatusBadge('pending').tone).toBe('warning');
-    expect(paymentStatusBadge('refunded').tone).toBe('danger');
+    expect(paymentStatusBadge('paid')?.tone).toBe('success');
+    expect(paymentStatusBadge('pending')?.tone).toBe('warning');
+    expect(paymentStatusBadge('refunded')?.tone).toBe('danger');
     expect(paymentStatusBadge(null)).toBeNull();
   });
 });

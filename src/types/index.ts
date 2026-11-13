@@ -209,7 +209,8 @@ export interface CreateUserPayload {
   password: string;
   first_name: string;
   last_name: string;
-  role: 'ADMIN' | 'EMPLOYEE' | 'SUPER_ADMIN';
+  /** Only a SUPER_ADMIN can choose it; otherwise the API creates an EMPLOYEE. */
+  role?: 'ADMIN' | 'EMPLOYEE' | 'SUPER_ADMIN';
 }
 
 export interface UpdateUserPayload {
